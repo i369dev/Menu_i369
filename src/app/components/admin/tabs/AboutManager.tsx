@@ -35,16 +35,7 @@ export const AboutManager: React.FC = () => {
 
     // Handlers
     const saveAboutContent = () => {
-        setConfig({
-            ...config,
-            aboutDescription: localConfig.aboutDescription,
-            aboutDescription_si: localConfig.aboutDescription_si,
-            aboutDescription_ta: localConfig.aboutDescription_ta,
-            aboutSpatial: localConfig.aboutSpatial,
-            aboutSpatial_si: localConfig.aboutSpatial_si,
-            aboutSpatial_ta: localConfig.aboutSpatial_ta,
-            aboutLogo: localConfig.aboutLogo
-        });
+        setConfig(localConfig);
         alert("About content updated!");
     };
 
@@ -73,7 +64,6 @@ export const AboutManager: React.FC = () => {
         }
         const newConfig = { ...config, teamMembers: members };
         setConfig(newConfig);
-        setLocalConfig(newConfig);
         setEditingTeamId(null);
     };
 
@@ -81,7 +71,6 @@ export const AboutManager: React.FC = () => {
         if (confirmDelete("Remove team member?")) {
             const newConfig = { ...config, teamMembers: config.teamMembers.filter(m => m.id !== id) };
             setConfig(newConfig);
-            setLocalConfig(newConfig);
         }
     };
 
@@ -116,7 +105,6 @@ export const AboutManager: React.FC = () => {
         }
         const newConfig = { ...config, socialLinks: links };
         setConfig(newConfig);
-        setLocalConfig(newConfig);
         setEditingSocialId(null);
     };
 
@@ -124,7 +112,6 @@ export const AboutManager: React.FC = () => {
         if (confirmDelete("Remove social link?")) {
             const newConfig = { ...config, socialLinks: config.socialLinks.filter(s => s.id !== id) };
             setConfig(newConfig);
-            setLocalConfig(newConfig);
         }
     };
 

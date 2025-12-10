@@ -75,60 +75,17 @@ export const SettingsManager: React.FC = () => {
     });
 
     const saveBranding = () => {
-        setConfig({
-            ...config,
-            logoLight: localConfig.logoLight,
-            logoDark: localConfig.logoDark,
-            loadingLogo: localConfig.loadingLogo,
-            footerLogo: localConfig.footerLogo,
-        });
+        setConfig(localConfig);
         alert("Branding assets updated!");
     };
 
     const saveFooterContact = () => {
-        setConfig({
-            ...config,
-            agencyTagline: localConfig.agencyTagline,
-            agencyTagline_si: localConfig.agencyTagline_si,
-            agencyTagline_ta: localConfig.agencyTagline_ta,
-            contactEmail: localConfig.contactEmail,
-            whatsappNumber: localConfig.whatsappNumber,
-            whatsappIcon: localConfig.whatsappIcon
-        });
+        setConfig(localConfig);
         alert("Footer & Contact settings updated!");
     };
 
     const savePrivacyPolicy = () => {
-        setConfig({
-            ...config,
-            pp_introText: localConfig.pp_introText,
-            pp_introText_si: localConfig.pp_introText_si,
-            pp_introText_ta: localConfig.pp_introText_ta,
-            
-            pp_dataText: localConfig.pp_dataText,
-            pp_dataText_si: localConfig.pp_dataText_si,
-            pp_dataText_ta: localConfig.pp_dataText_ta,
-            
-            pp_dataList: localConfig.pp_dataList,
-            pp_dataList_si: localConfig.pp_dataList_si,
-            pp_dataList_ta: localConfig.pp_dataList_ta,
-
-            pp_usageText: localConfig.pp_usageText,
-            pp_usageText_si: localConfig.pp_usageText_si,
-            pp_usageText_ta: localConfig.pp_usageText_ta,
-            
-            pp_usageList: localConfig.pp_usageList,
-            pp_usageList_si: localConfig.pp_usageList_si,
-            pp_usageList_ta: localConfig.pp_usageList_ta,
-
-            pp_thirdPartyText: localConfig.pp_thirdPartyText,
-            pp_thirdPartyText_si: localConfig.pp_thirdPartyText_si,
-            pp_thirdPartyText_ta: localConfig.pp_thirdPartyText_ta,
-
-            pp_contactText: localConfig.pp_contactText,
-            pp_contactText_si: localConfig.pp_contactText_si,
-            pp_contactText_ta: localConfig.pp_contactText_ta,
-        });
+        setConfig(localConfig);
         alert("Privacy Policy updated!");
     };
 
@@ -146,13 +103,12 @@ export const SettingsManager: React.FC = () => {
     const saveEmail = () => {
         if (!tempEmail) return alert("Email address required");
         const currentList = config.contactEmails || [];
-        let newList = [...currentList];
+        let newList;
         
         if (editingEmailId === -1) {
-            newList.push({ id: Date.now(), email: tempEmail });
+            newList = [...currentList, { id: Date.now(), email: tempEmail }];
         } else {
-            const idx = newList.findIndex(e => e.id === editingEmailId);
-            if (idx !== -1) newList[idx] = { ...newList[idx], email: tempEmail };
+            newList = currentList.map(e => e.id === editingEmailId ? { ...e, email: tempEmail } : e);
         }
         
         setConfig({ ...config, contactEmails: newList });

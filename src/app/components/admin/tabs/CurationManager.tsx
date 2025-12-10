@@ -20,12 +20,7 @@ export const CurationManager: React.FC = () => {
         localConfig.curationIntro_ta !== config.curationIntro_ta;
 
     const saveCurationText = () => {
-        setConfig({
-            ...config,
-            curationIntro: localConfig.curationIntro,
-            curationIntro_si: localConfig.curationIntro_si,
-            curationIntro_ta: localConfig.curationIntro_ta
-        });
+        setConfig(localConfig);
         alert("Curation text updated!");
     };
 
@@ -44,12 +39,11 @@ export const CurationManager: React.FC = () => {
 
     const saveItem = () => {
         if (!tempItem.title) return alert("Title is required");
-        const newItems = [...curatedItems];
+        let newItems;
         if (editingItemId === -1) {
-            newItems.push(tempItem as CuratedItem);
+            newItems = [...curatedItems, tempItem as CuratedItem];
         } else {
-            const index = newItems.findIndex(i => i.id === editingItemId);
-            if (index !== -1) newItems[index] = tempItem as CuratedItem;
+            newItems = curatedItems.map(i => i.id === editingItemId ? tempItem as CuratedItem : i);
         }
         setCuratedItems(newItems);
         setEditingItemId(null);
