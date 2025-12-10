@@ -1,3 +1,58 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "appetizer-1",
+      "description": "Crispy bruschetta with fresh tomatoes",
+      "imageUrl": "https://images.unsplash.com/photo-1630230596637-28f416b537ff?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxicnVzY2hldHRhJTIwdG9tYXRvfGVufDB8fHx8MTc2NTM2MjEwNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "bruschetta tomato"
+    },
+    {
+      "id": "appetizer-2",
+      "description": "A vibrant caprese salad",
+      "imageUrl": "https://images.unsplash.com/photo-1665877417637-a20691d6ee8b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxjYXByZXNlJTIwc2FsYWR8ZW58MHx8fHwxNzY1MzE1MzcyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "caprese salad"
+    },
+    {
+      "id": "main-1",
+      "description": "Classic spaghetti carbonara",
+      "imageUrl": "https://images.unsplash.com/photo-1608756687911-aa1599ab3bd9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxzcGFnaGV0dGklMjBjYXJib25hcmF8ZW58MHx8fHwxNzY1MzE4Nzc2fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "spaghetti carbonara"
+    },
+    {
+      "id": "main-2",
+      "description": "Wood-fired margherita pizza",
+      "imageUrl": "https://images.unsplash.com/photo-1598023696416-0193a0bcd302?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxtYXJnaGVyaXRhJTIwcGl6emF8ZW58MHx8fHwxNzY1MzQyODcwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "margherita pizza"
+    },
+    {
+      "id": "main-3",
+      "description": "Grilled salmon with asparagus",
+      "imageUrl": "https://images.unsplash.com/photo-1611599537845-1c7aca0091c0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxncmlsbGVkJTIwc2FsbW9ufGVufDB8fHx8MTc2NTI5OTgxMXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "grilled salmon"
+    },
+    {
+      "id": "dessert-1",
+      "description": "Rich and creamy tiramisu",
+      "imageUrl": "https://images.unsplash.com/photo-1568627175730-73d05bd69ca9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHx0aXJhbWlzdXxlbnwwfHx8fDE3NjUzNTY2OTl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "tiramisu"
+    },
+    {
+      "id": "dessert-2",
+      "description": "Decadent chocolate lava cake",
+      "imageUrl": "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxjaG9jb2xhdGUlMjBjYWtlfGVufDB8fHx8MTc2NTMyNjg3OHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "chocolate cake"
+    },
+    {
+      "id": "beverage-1",
+      "description": "A glass of red wine",
+      "imageUrl": "https://images.unsplash.com/photo-1630369160812-26c7604cbd8c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxyZWQlMjB3aW5lfGVufDB8fHx8MTc2NTM1OTc5M3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "red wine"
+    },
+    {
+      "id": "beverage-2",
+      "description": "Refreshing iced tea with lemon",
+      "imageUrl": "https://images.unsplash.com/photo-1596343540266-130b3dbb1158?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxpY2VkJTIwdGVhfGVufDB8fHx8MTc2NTI5OTU0Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "iced tea"
+    }
+  ]
 }
