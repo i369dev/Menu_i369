@@ -1,0 +1,244 @@
+
+import React, { useState } from 'react';
+import { useContent } from '../../../context/ContentContext';
+import { Project } from '../../../types';
+import { Card, SectionHeader, InputGroup, TextInput, TextArea, Button, FileUpload, MultiFileUpload, LangTabs, confirmDelete, Toggle } from '../ui/AdminShared';
+
+export const ProjectManager: React.FC = () => {
+    // 1. Hook into the "Backend" (Context)
+    const { projects, setProjects, deleteProject } = useContent();
+
+    // 2. Local State for UI Management
+    const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
+    const [tempProject, setTempProject] = useState<Partial<Project>>({});
+    const [originalProject, setOriginalProject] = useState<Partial<Project>>({});
+    const [projectLang, setProjectLang] = useState<'en'|'si'|'ta'>('en'); 
+
+    // 3. Dirty Checking Logic for Save Button
+    const isProjectDirty = JSON.stringify(tempProject) !== JSON.stringify(originalProject);
+
+    // 4. Create / Edit Handler
+    const startEditProject = (p?: Project) => {
+        if (p) {
+            setEditingProjectId(p.id);
+            const copy = JSON.parse(JSON.stringify(p));
+            setTempProject(copy);
+            setOriginalProject(copy);
+        } else {
+            setEditingProjectId(-1);
+            // Default Empty State
+            const empty = {
+                id: Date.now(),
+                title: '', subtitle: '', year: 'Rs. 0', location: 'ISLAND-WIDE', category: 'Menu Design', image: '', video: '', description: '', services: [], detailImages: [], themeColor: '#ffffff', textColor: '#000000', pricing: { designOnly: 0, designAndPrint: { minQty: 10, basePrice: 0, unitPrice: 0 } },
+                isVisible: true
+            };
+            setTempProject(empty);
+            setOriginalProject(empty);
+        }
+    };
+
+    // 5. Save Handler (Create/Update)
+    const saveProject = () => {
+        if (!tempProject.title) return alert("Title is required");
+        
+        const newProjects = [...projects];
+        if (editingProjectId === -1) {
+            newProjects.push(tempProject as Project);
+        } else {
+            const index = newProjects.findIndex(p => p.id === editingProjectId);
+            if (index !== -1) newProjects[index] = tempProject as Project;
+        }
+        
+        // Push changes to "Backend"
+        setProjects(newProjects);
+        setEditingProjectId(null);
+    };
+
+    // 6. Delete Handler (Refactored for Robustness)
+    const handleDeleteClick = (id: number) => {
+        // Strict User Confirmation
+        if (confirmDelete("Permanently delete this project? This action cannot be undone.")) {
+            // Call "Backend" API
+            deleteProject(id);
+        }
+    };
+
+    const toggleVisibility = (id: number, visible: boolean) => {
+        const updated = projects.map(p => p.id === id ? { ...p, isVisible: visible } : p);
+        setProjects(updated);
+    };
+
+    // 7. Render View: Editor Mode
+    if (editingProjectId !== null) {
+        return (
+            <div className="max-w-5xl mx-auto pb-20">
+                <Card className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    <SectionHeader title={editingProjectId === -1 ? "Create Project" : "Edit Project"} />
+                    <div className="space-y-8">
+                        {/* Universal Fields */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <InputGroup label="Project Title (English)" subLabel="Must be UPPERCASE. Excluded from translation.">
+                                <TextInput value={tempProject.title} onChange={e => setTempProject({...tempProject, title: e.target.value.toUpperCase()})} />
+                            </InputGroup>
+                            <InputGroup label="Category">
+                                    <TextInput value={tempProject.category} onChange={e => setTempProject({...tempProject, category: e.target.value})} />
+                            </InputGroup>
+                        </div>
+
+                        <hr className="border-gray-100" />
+
+                        {/* Localized Content */}
+                        <div>
+                            <LangTabs active={projectLang} onChange={setProjectLang} />
+                            {projectLang === 'en' && (
+                                <div className="space-y-4 animate-in fade-in">
+                                    <InputGroup label="Subtitle (English)"><TextInput value={tempProject.subtitle} onChange={e => setTempProject({...tempProject, subtitle: e.target.value})} /></InputGroup>
+                                    <InputGroup label="Description (English)"><TextArea value={tempProject.description} onChange={e => setTempProject({...tempProject, description: e.target.value})} rows={4} /></InputGroup>
+                                </div>
+                            )}
+                            {projectLang === 'si' && (
+                                <div className="space-y-4 animate-in fade-in">
+                                    <InputGroup label="Subtitle (Sinhala)"><TextInput value={tempProject.subtitle_si || ''} onChange={e => setTempProject({...tempProject, subtitle_si: e.target.value})} /></InputGroup>
+                                    <InputGroup label="Description (Sinhala)"><TextArea value={tempProject.description_si || ''} onChange={e => setTempProject({...tempProject, description_si: e.target.value})} rows={4} /></InputGroup>
+                                </div>
+                            )}
+                            {projectLang === 'ta' && (
+                                <div className="space-y-4 animate-in fade-in">
+                                    <InputGroup label="Subtitle (Tamil)"><TextInput value={tempProject.subtitle_ta || ''} onChange={e => setTempProject({...tempProject, subtitle_ta: e.target.value})} /></InputGroup>
+                                    <InputGroup label="Description (Tamil)"><TextArea value={tempProject.description_ta || ''} onChange={e => setTempProject({...tempProject, description_ta: e.target.value})} rows={4} /></InputGroup>
+                                </div>
+                            )}
+                        </div>
+
+                        <hr className="border-gray-100" />
+                        
+                        {/* Pricing */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <InputGroup label="price_design_only" subLabel="Design Only Price (Rs)">
+                                <TextInput type="number" value={tempProject.pricing?.designOnly || 0} onChange={e => setTempProject({...tempProject, pricing: { ...tempProject.pricing!, designOnly: parseFloat(e.target.value) || 0 }})} />
+                            </InputGroup>
+                            <InputGroup label="price_design_and_print" subLabel="Base Design & Print Price (Rs)">
+                                <TextInput type="number" value={tempProject.pricing?.designAndPrint?.basePrice || 0} onChange={e => setTempProject({...tempProject, pricing: { ...tempProject.pricing!, designAndPrint: { ...tempProject.pricing!.designAndPrint!, basePrice: parseFloat(e.target.value) || 0 } }})} />
+                            </InputGroup>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                            <InputGroup label="Included Cards (Min Qty)" subLabel="Baseline quantity included in base price">
+                                <TextInput 
+                                    type="number" 
+                                    value={tempProject.pricing?.designAndPrint?.minQty || 10} 
+                                    onChange={e => setTempProject({
+                                        ...tempProject, 
+                                        pricing: { 
+                                            ...tempProject.pricing!, 
+                                            designAndPrint: { 
+                                                ...tempProject.pricing!.designAndPrint!, 
+                                                minQty: parseInt(e.target.value) || 10 
+                                            } 
+                                        }
+                                    })} 
+                                />
+                            </InputGroup>
+                            <InputGroup label="Incremental Unit Price" subLabel="Cost per additional card (Rs)">
+                                <TextInput 
+                                    type="number" 
+                                    value={tempProject.pricing?.designAndPrint?.unitPrice || 0} 
+                                    onChange={e => setTempProject({
+                                        ...tempProject, 
+                                        pricing: { 
+                                            ...tempProject.pricing!, 
+                                            designAndPrint: { 
+                                                ...tempProject.pricing!.designAndPrint!, 
+                                                unitPrice: parseFloat(e.target.value) || 0 
+                                            } 
+                                        }
+                                    })} 
+                                />
+                            </InputGroup>
+                        </div>
+
+                        {/* Assets */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <FileUpload 
+                                label="Main Image" 
+                                previewUrl={tempProject.image} 
+                                onUpload={b64 => setTempProject({...tempProject, image: b64})}
+                            />
+                            <FileUpload 
+                                label="Background Video" 
+                                previewUrl={tempProject.video} 
+                                onUpload={b64 => setTempProject({...tempProject, video: b64})}
+                                accept="video/mp4"
+                                onClear={() => setTempProject({...tempProject, video: ''})}
+                            />
+                        </div>
+
+                        {/* Gallery Upload */}
+                        <MultiFileUpload 
+                            label="Gallery Images"
+                            images={tempProject.detailImages || []}
+                            onUpdate={images => setTempProject({...tempProject, detailImages: images})}
+                        />
+
+                        <div className="flex gap-4 pt-6 border-t border-gray-100">
+                            <Button onClick={saveProject} variant="success" disabled={!isProjectDirty}>Save Project</Button>
+                            <Button onClick={() => setEditingProjectId(null)} variant="secondary">Cancel</Button>
+                        </div>
+                    </div>
+                </Card>
+            </div>
+        );
+    }
+
+    // 8. Render View: List Mode
+    return (
+        <div className="max-w-5xl mx-auto pb-20">
+            <SectionHeader 
+                title="Menu Design Projects" 
+                action={<Button onClick={() => startEditProject()}>+ Add New Project</Button>} 
+            />
+            <div className="grid grid-cols-1 gap-6">
+                {projects.map(p => (
+                    <Card 
+                        key={p.id} 
+                        className="flex flex-col md:flex-row gap-6 hover:border-blue-300 transition-colors group cursor-pointer relative" 
+                        onClick={() => startEditProject(p)}
+                    >
+                        {/* Visibility Overlay if hidden */}
+                        {p.isVisible === false && (
+                             <div className="absolute inset-0 bg-white/50 z-10 pointer-events-none rounded-lg" />
+                        )}
+
+                        <div className="w-full md:w-32 h-32 bg-gray-100 rounded-md overflow-hidden shrink-0 border border-gray-200">
+                            <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex-1 flex flex-col justify-between">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h4 className="text-lg font-bold text-gray-900">{p.title} {p.isVisible === false && <span className="text-red-500 text-xs ml-2">(Hidden)</span>}</h4>
+                                    <p className="text-sm text-gray-500">{p.subtitle}</p>
+                                </div>
+                                <span className="text-xs font-bold px-2 py-1 bg-gray-100 rounded text-gray-600">{p.category}</span>
+                            </div>
+                            {/* Actions - Wrapped in stopPropagation div to prevent Card click */}
+                            <div className="mt-4 flex gap-3 items-center" onClick={(e) => e.stopPropagation()}>
+                                <Toggle checked={p.isVisible !== false} onChange={(val) => toggleVisibility(p.id, val)} />
+                                <div className="h-4 w-px bg-gray-300 mx-2" />
+                                {/* Edit Button */}
+                                <Button variant="secondary" onClick={() => startEditProject(p)} className="text-xs">Edit</Button>
+                                
+                                {/* Delete Button - Activated */}
+                                <Button 
+                                    variant="danger" 
+                                    onClick={() => handleDeleteClick(p.id)} 
+                                    className="text-xs"
+                                >
+                                    Delete
+                                </Button>
+                            </div>
+                        </div>
+                    </Card>
+                ))}
+            </div>
+        </div>
+    );
+};
