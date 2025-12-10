@@ -1,9 +1,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence, PanInfo, Variants, Transition } from 'framer-motion';
-import { Project, Page } from '../../types';
+import { Project } from '../../types';
 import { Language, translations } from '../../utils/translations';
 import { getCyclicIndex } from '../../utils/helpers';
+import { useRouter } from 'next/navigation';
 
 interface WorkListProps {
     onSelect: (project: Project) => void;
@@ -11,10 +12,10 @@ interface WorkListProps {
     projects: Project[];
     language: Language;
     onLanguageChange: (lang: Language) => void;
-    setPage: (page: Page) => void;
 }
 
-export const WorkList: React.FC<WorkListProps> = ({ onSelect, isFirstLoad, projects, language, onLanguageChange, setPage }) => {
+export const WorkList: React.FC<WorkListProps> = ({ onSelect, isFirstLoad, projects, language, onLanguageChange }) => {
+    const router = useRouter();
     const [activeIndex, setActiveIndex] = useState(0);
     const scrollAccumulator = useRef(0);
     const lastScrollTime = useRef(0);
@@ -77,7 +78,7 @@ export const WorkList: React.FC<WorkListProps> = ({ onSelect, isFirstLoad, proje
                 <div className="text-center">
                     <h2 className="text-2xl font-serif mb-2">No Projects Found</h2>
                     <p className="text-sm font-sans opacity-60">Please add projects via the Admin Dashboard.</p>
-                    <button onClick={() => setPage('admin')} className="mt-8 text-xs uppercase tracking-widest border border-white/30 px-6 py-2 rounded-full hover:bg-white hover:text-black transition-colors">
+                    <button onClick={() => router.push('/admin')} className="mt-8 text-xs uppercase tracking-widest border border-white/30 px-6 py-2 rounded-full hover:bg-white hover:text-black transition-colors">
                         Go to Admin
                     </button>
                 </div>
@@ -178,14 +179,6 @@ export const WorkList: React.FC<WorkListProps> = ({ onSelect, isFirstLoad, proje
                  0{currentProjectIndex + 1} <span className="opacity-40">/ 0{projects.length}</span>
             </motion.div>
 
-            {/* Admin Entry Point */}
-            <div 
-                className="fixed bottom-4 left-4 z-[100] opacity-0 hover:opacity-50 transition-opacity cursor-pointer p-4"
-                onClick={() => setPage('admin')}
-            >
-                <div className="w-2 h-2 bg-white rounded-full"></div>
-            </div>
-
             <div className="relative w-full h-full flex items-center justify-center perspective-1000 z-10 pointer-events-none">
                 <AnimatePresence initial={false}>
                     {visibleOffsets.map((offset) => {
@@ -196,7 +189,6 @@ export const WorkList: React.FC<WorkListProps> = ({ onSelect, isFirstLoad, proje
 
                         const isActive = offset === 0;
                         const isPast = offset < 0;
-                        const initialY = isFirstLoad && isActive ? 0 : isFirstLoad ? 1000 : offset * 40;
                         const targetY = isPast ? '100vh' : isActive ? 0 : -offset * 40; 
                         const targetZ = isPast ? 0 : -offset * 50;
                         const targetScale = isPast ? 0.9 : 1 - (offset * 0.05);

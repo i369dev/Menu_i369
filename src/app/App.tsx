@@ -7,14 +7,13 @@ import { WorkSection } from './components/WorkSection';
 import { AboutSection } from './components/AboutSection';
 import { CurationSection } from './components/CurationSection';
 import { ContactSection } from './components/ContactSection';
-import { AdminDashboard } from './components/admin/AdminDashboard';
 import { Page } from './types';
 import { Language } from './utils/translations';
 import { ContentProvider } from './context/ContentContext';
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState<Page>('work');
+  const [page, setPage] = useState<Omit<Page, 'admin'>>('work');
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [isDetailView, setIsDetailView] = useState(false);
   
@@ -23,20 +22,18 @@ const App: React.FC = () => {
       return (saved as Language) || 'en';
   });
 
-  const bgColors: Record<Page, string> = {
+  const bgColors: Record<Omit<Page, 'admin'>, string> = {
     work: '#353535',
     about: '#FFFFFF',
     curation: '#f5f5f0',
-    contact: '#d2cdc4',
-    admin: '#f3f4f6' // Light grey for admin
+    contact: '#d2cdc4'
   };
 
-  const navTextColors: Record<Page, string> = {
+  const navTextColors: Record<Omit<Page, 'admin'>, string> = {
     work: '#FFFFFF',
     about: '#000000',
     curation: '#1a1a1a',
-    contact: '#2a1b1b',
-    admin: '#000000'
+    contact: '#2a1b1b'
   };
 
   const handleLanguageSelect = (lang: Language) => {
@@ -73,16 +70,14 @@ const App: React.FC = () => {
         </AnimatePresence>
 
         <main className="relative z-0">
-            {page !== 'admin' && (
-                <Navbar 
-                    activePage={page} 
-                    setPage={setPage} 
-                    textColor={navTextColors[page]} 
-                    isFirstLoad={isFirstLoad}
-                    language={currentLang}
-                    isDetailView={isDetailView}
-                />
-            )}
+            <Navbar 
+                activePage={page} 
+                setPage={setPage} 
+                textColor={navTextColors[page]} 
+                isFirstLoad={isFirstLoad}
+                language={currentLang}
+                isDetailView={isDetailView}
+            />
             
             <AnimatePresence mode='wait'>
                 {page === 'work' && (
@@ -92,13 +87,11 @@ const App: React.FC = () => {
                         language={currentLang} 
                         onLanguageChange={handleLanguageSelect}
                         onDetailViewChange={setIsDetailView}
-                        setPage={setPage} // Pass setPage to enable admin navigation
                     />
                 )}
                 {page === 'about' && <AboutSection key="about" language={currentLang} />}
                 {page === 'curation' && <CurationSection key="curation" language={currentLang} />}
                 {page === 'contact' && <ContactSection key="contact" language={currentLang} />}
-                {page === 'admin' && <AdminDashboard key="admin" onExit={() => setPage('work')} />}
             </AnimatePresence>
         </main>
         </div>
