@@ -18,7 +18,6 @@ export const Toggle: React.FC<{ checked: boolean; onChange: (checked: boolean) =
     </div>
 );
 
-// Fixed: Accepts all HTMLDivElement props (like onClick) and passes them to the div
 export const Card: React.FC<React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode }> = ({ children, className, ...props }) => (
     <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-6 ${className || ''}`} {...props}>
         {children}
@@ -55,7 +54,6 @@ export const TextArea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement
     />
 );
 
-// Fixed: Defaults to type="button" to prevent form submission unless specified
 export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'danger' | 'secondary' | 'success' }> = ({ variant = 'primary', className, children, type = "button", ...props }) => {
     const baseClass = "px-4 py-2 rounded-md text-sm font-bold uppercase tracking-wide transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:blur-[2px] shadow-sm";
     const variants = {
@@ -69,26 +67,21 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
 
 export const FileUpload: React.FC<{ 
     accept?: string; 
-    onUpload: (base64: string) => void; 
+    onFileSelect: (file: File) => void; 
     previewUrl?: string; 
     label?: string; 
     recommendedSize?: string;
     onClear?: () => void;
-}> = ({ accept = "image/*,video/*", onUpload, previewUrl, label, recommendedSize, onClear }) => {
-    const fileInputRef = useRef<HTMLInputElement>(null);
+}> = ({ accept = "image/*", onFileSelect, previewUrl, label, recommendedSize, onClear }) => {
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            if (file.size > 10 * 1024 * 1024) {
+            if (file.size > 10 * 1024 * 1024) { // 10MB limit
                 alert("File is too large! Please upload files smaller than 10MB.");
                 return;
             }
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                onUpload(reader.result as string);
-            };
-            reader.readAsDataURL(file);
+            onFileSelect(file);
         }
     };
 
@@ -101,7 +94,7 @@ export const FileUpload: React.FC<{
                 {previewUrl ? (
                     <div className="relative group">
                         <div className="w-24 h-24 bg-gray-200 rounded-md overflow-hidden border border-gray-300 shadow-sm">
-                             {previewUrl.startsWith('data:video') || previewUrl.endsWith('.mp4') ? (
+                             {previewUrl.startsWith('blob:') || previewUrl.startsWith('data:video') || previewUrl.endsWith('.mp4') ? (
                                  <video src={previewUrl} className="w-full h-full object-cover" />
                              ) : (
                                  <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
@@ -134,10 +127,9 @@ export const FileUpload: React.FC<{
                             file:bg-blue-50 file:text-blue-700
                             hover:file:bg-blue-100
                             cursor-pointer"
-                        ref={fileInputRef}
                     />
                     <p className="text-xs text-gray-400 mt-2">
-                        Supports: JPG, PNG, MP4.
+                        Max 10MB. Supports: JPG, PNG, MP4.
                     </p>
                 </div>
             </div>
@@ -146,35 +138,38 @@ export const FileUpload: React.FC<{
 };
 
 export const MultiFileUpload: React.FC<{
-    images: string[];
-    onUpdate: (images: string[]) => void;
+    files: (File | string)[];
+    onUpdate: (files: (File | string)[]) => void;
     label: string;
-}> = ({ images, onUpdate, label }) => {
-    const handleAdd = (base64: string) => {
-        onUpdate([...images, base64]);
+}> = ({ files, onUpdate, label }) => {
+    const handleAdd = (file: File) => {
+        onUpdate([...files, file]);
     };
     const handleRemove = (index: number) => {
-        onUpdate(images.filter((_, i) => i !== index));
+        onUpdate(files.filter((_, i) => i !== index));
     };
 
     return (
         <div className="space-y-4">
             <p className="text-sm font-bold text-gray-800">{label}</p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {images.map((img, i) => (
-                    <div key={i} className="relative group aspect-square bg-gray-100 rounded-md overflow-hidden border border-gray-200">
-                        <img src={img} className="w-full h-full object-cover" alt="" />
-                        <button 
-                            onClick={() => handleRemove(i)}
-                            className="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                            ×
-                        </button>
-                    </div>
-                ))}
+                {files.map((fileOrUrl, i) => {
+                    const previewUrl = fileOrUrl instanceof File ? URL.createObjectURL(fileOrUrl) : fileOrUrl;
+                    return (
+                        <div key={i} className="relative group aspect-square bg-gray-100 rounded-md overflow-hidden border border-gray-200">
+                            <img src={previewUrl} className="w-full h-full object-cover" alt="" />
+                            <button 
+                                onClick={() => handleRemove(i)}
+                                className="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                                ×
+                            </button>
+                        </div>
+                    );
+                })}
                 <div className="aspect-square">
                     <FileUpload 
-                        onUpload={handleAdd} 
+                        onFileSelect={handleAdd} 
                         label="" 
                         recommendedSize="Add New" 
                     />
@@ -183,6 +178,7 @@ export const MultiFileUpload: React.FC<{
         </div>
     );
 };
+
 
 export const LangTabs: React.FC<{ active: 'en' | 'si' | 'ta'; onChange: (l: 'en'|'si'|'ta') => void }> = ({ active, onChange }) => (
     <div className="flex gap-2 mb-4 border-b border-gray-200">

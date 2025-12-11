@@ -3,16 +3,32 @@ import React, { useState } from 'react';
 import { useContent } from '../../../context/ContentContext';
 import { Project } from '../../../types';
 import { Card, SectionHeader, InputGroup, TextInput, TextArea, Button, FileUpload, MultiFileUpload, LangTabs, confirmDelete, Toggle } from '../ui/AdminShared';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
+const storage = getStorage();
+
+async function uploadFileToStorage(file: File, path: string): Promise<string> {
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
+}
 
 export const ProjectManager: React.FC = () => {
     const { projects, setProjects } = useContent();
 
     const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
     const [tempProject, setTempProject] = useState<Partial<Project>>({});
-    const [originalProject, setOriginalProject] = useState<Partial<Project>>({});
+    const [originalProject, setOriginalProject] = useState<Partial.Project>>({});
     const [projectLang, setProjectLang] = useState<'en'|'si'|'ta'>('en'); 
 
-    const isProjectDirty = JSON.stringify(tempProject) !== JSON.stringify(originalProject);
+    // New state for file objects
+    const [mainImageFile, setMainImageFile] = useState<File | null>(null);
+    const [videoFile, setVideoFile] = useState<File | null>(null);
+    const [detailImageFiles, setDetailImageFiles] = useState<(File | string)[]>([]);
+
+
+    const isProjectDirty = JSON.stringify(tempProject) !== JSON.stringify(originalProject) || mainImageFile !== null || videoFile !== null || detailImageFiles.some(f => f instanceof File);
 
     const startEditProject = (p?: Project) => {
         if (p) {
@@ -20,6 +36,7 @@ export const ProjectManager: React.FC = () => {
             const copy = JSON.parse(JSON.stringify(p));
             setTempProject(copy);
             setOriginalProject(copy);
+            setDetailImageFiles(copy.detailImages || []);
         } else {
             setEditingProjectId(-1);
             const empty = {
@@ -29,17 +46,49 @@ export const ProjectManager: React.FC = () => {
             };
             setTempProject(empty);
             setOriginalProject(empty);
+            setDetailImageFiles([]);
         }
+        setMainImageFile(null);
+        setVideoFile(null);
     };
 
-    const saveProject = () => {
+    const saveProject = async () => {
         if (!tempProject.title) return alert("Title is required");
+        let updatedProject = { ...tempProject };
+
+        try {
+            if (mainImageFile) {
+                const path = `projects/${Date.now()}_${mainImageFile.name}`;
+                updatedProject.image = await uploadFileToStorage(mainImageFile, path);
+            }
+            if (videoFile) {
+                const path = `projects/${Date.now()}_${videoFile.name}`;
+                updatedProject.video = await uploadFileToStorage(videoFile, path);
+            }
+            
+            const uploadedDetailImageUrls = await Promise.all(
+                detailImageFiles.map(async (fileOrUrl) => {
+                    if (fileOrUrl instanceof File) {
+                        const path = `projects/${Date.now()}_${fileOrUrl.name}`;
+                        return await uploadFileToStorage(fileOrUrl, path);
+                    }
+                    return fileOrUrl;
+                })
+            );
+            updatedProject.detailImages = uploadedDetailImageUrls;
+
+
+        } catch (error) {
+            console.error("Error uploading file:", error);
+            alert("File upload failed. Please try again.");
+            return;
+        }
         
         let newProjects;
         if (editingProjectId === -1) {
-            newProjects = [...projects, tempProject as Project];
+            newProjects = [...projects, updatedProject as Project];
         } else {
-            newProjects = projects.map(p => p.id === editingProjectId ? tempProject as Project : p);
+            newProjects = projects.map(p => p.id === editingProjectId ? updatedProject as Project : p);
         }
         
         setProjects(newProjects);
@@ -66,10 +115,10 @@ export const ProjectManager: React.FC = () => {
                         {/* Universal Fields */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <InputGroup label="Project Title (English)" subLabel="Must be UPPERCASE. Excluded from translation.">
-                                <TextInput value={tempProject.title} onChange={e => setTempProject({...tempProject, title: e.target.value.toUpperCase()})} />
+                                <TextInput value={tempProject.title || ''} onChange={e => setTempProject({...tempProject, title: e.target.value.toUpperCase()})} />
                             </InputGroup>
                             <InputGroup label="Category">
-                                    <TextInput value={tempProject.category} onChange={e => setTempProject({...tempProject, category: e.target.value})} />
+                                    <TextInput value={tempProject.category || ''} onChange={e => setTempProject({...tempProject, category: e.target.value})} />
                             </InputGroup>
                         </div>
 
@@ -80,8 +129,8 @@ export const ProjectManager: React.FC = () => {
                             <LangTabs active={projectLang} onChange={setProjectLang} />
                             {projectLang === 'en' && (
                                 <div className="space-y-4 animate-in fade-in">
-                                    <InputGroup label="Subtitle (English)"><TextInput value={tempProject.subtitle} onChange={e => setTempProject({...tempProject, subtitle: e.target.value})} /></InputGroup>
-                                    <InputGroup label="Description (English)"><TextArea value={tempProject.description} onChange={e => setTempProject({...tempProject, description: e.target.value})} rows={4} /></InputGroup>
+                                    <InputGroup label="Subtitle (English)"><TextInput value={tempProject.subtitle || ''} onChange={e => setTempProject({...tempProject, subtitle: e.target.value})} /></InputGroup>
+                                    <InputGroup label="Description (English)"><TextArea value={tempProject.description || ''} onChange={e => setTempProject({...tempProject, description: e.target.value})} rows={4} /></InputGroup>
                                 </div>
                             )}
                             {projectLang === 'si' && (
@@ -148,28 +197,28 @@ export const ProjectManager: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <FileUpload 
                                 label="Main Image" 
-                                previewUrl={tempProject.image} 
-                                onUpload={b64 => setTempProject({...tempProject, image: b64})}
+                                previewUrl={mainImageFile ? URL.createObjectURL(mainImageFile) : tempProject.image} 
+                                onFileSelect={setMainImageFile}
                             />
                             <FileUpload 
                                 label="Background Video" 
-                                previewUrl={tempProject.video} 
-                                onUpload={b64 => setTempProject({...tempProject, video: b64})}
+                                previewUrl={videoFile ? URL.createObjectURL(videoFile) : tempProject.video}
+                                onFileSelect={setVideoFile}
                                 accept="video/mp4"
-                                onClear={() => setTempProject({...tempProject, video: ''})}
+                                onClear={() => { setVideoFile(null); setTempProject({...tempProject, video: ''})}}
                             />
                         </div>
 
                         {/* Gallery Upload */}
                         <MultiFileUpload 
                             label="Gallery Images"
-                            images={tempProject.detailImages || []}
-                            onUpdate={images => setTempProject({...tempProject, detailImages: images})}
+                            files={detailImageFiles}
+                            onUpdate={setDetailImageFiles}
                         />
 
                         <div className="flex gap-4 pt-6 border-t border-gray-100">
                             <Button onClick={saveProject} variant="success" disabled={!isProjectDirty}>Save Project</Button>
-                            <Button onClick={() => setEditingProjectId(null)} variant="secondary">Cancel</Button>
+                            <Button onClick={() => startEditProject()} variant="secondary">Cancel</Button>
                         </div>
                     </div>
                 </Card>

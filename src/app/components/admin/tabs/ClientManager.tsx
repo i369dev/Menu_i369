@@ -3,36 +3,58 @@ import React, { useState } from 'react';
 import { useContent } from '../../../context/ContentContext';
 import { TrustedClient } from '../../../types';
 import { Card, SectionHeader, InputGroup, TextInput, Button, FileUpload, confirmDelete, Toggle } from '../ui/AdminShared';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
+const storage = getStorage();
+
+async function uploadFileToStorage(file: File, path: string): Promise<string> {
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
+}
 
 export const ClientManager: React.FC = () => {
     const { trustedClients, setTrustedClients } = useContent();
     const [editingClientIndex, setEditingClientIndex] = useState<number | null>(null);
     const [tempClient, setTempClient] = useState<Partial<TrustedClient>>({});
-    const [originalClient, setOriginalClient] = useState<Partial<TrustedClient>>({});
-
-    const isClientDirty = JSON.stringify(tempClient) !== JSON.stringify(originalClient);
-
+    
+    // New state for file object
+    const [logoFile, setLogoFile] = useState<File | null>(null);
+    
     const startEditClient = (client?: TrustedClient, index?: number) => {
         if (client && index !== undefined) {
             setEditingClientIndex(index);
             setTempClient({ ...client });
-            setOriginalClient({ ...client });
         } else {
-            setEditingClientIndex(-1); // Use -1 to signify a new client
-            const empty = { business_name: '', logo_url: '', isVisible: true };
-            setTempClient(empty);
-            setOriginalClient(empty);
+            setEditingClientIndex(-1);
+            setTempClient({ business_name: '', logo_url: '', isVisible: true });
         }
+        setLogoFile(null); // Reset file on new edit
     };
 
-    const saveClient = () => {
+    const saveClient = async () => {
         if (!tempClient.business_name) return alert("Business Name is required");
+        let updatedClient = { ...tempClient };
+        
+        if (logoFile) {
+            try {
+                const path = `clients/${Date.now()}_${logoFile.name}`;
+                updatedClient.logo_url = await uploadFileToStorage(logoFile, path);
+            } catch (error) {
+                console.error("Error uploading logo:", error);
+                alert("Logo upload failed. Please try again.");
+                return;
+            }
+        }
         
         let newClients;
         if (editingClientIndex === -1) {
-            newClients = [...trustedClients, tempClient as TrustedClient];
+            newClients = [...trustedClients, updatedClient as TrustedClient];
+        } else if (editingClientIndex !== null) {
+            newClients = trustedClients.map((c, i) => i === editingClientIndex ? updatedClient as TrustedClient : c);
         } else {
-            newClients = trustedClients.map((c, i) => i === editingClientIndex ? tempClient as TrustedClient : c);
+            return;
         }
         setTrustedClients(newClients);
         setEditingClientIndex(null);
@@ -76,9 +98,14 @@ export const ClientManager: React.FC = () => {
                     <Card>
                     <SectionHeader title={editingClientIndex === -1 ? "Add Client" : "Edit Client"} />
                     <div className="space-y-4">
-                        <InputGroup label="Name (Excluded from Translation)"><TextInput value={tempClient.business_name} onChange={e => setTempClient({...tempClient, business_name: e.target.value})} /></InputGroup>
-                        <FileUpload label="Logo" previewUrl={tempClient.logo_url} onUpload={b64 => setTempClient({...tempClient, logo_url: b64})} onClear={() => setTempClient({...tempClient, logo_url: ''})} />
-                        <div className="flex gap-4"><Button onClick={saveClient} variant="success" disabled={!isClientDirty}>Save</Button><Button onClick={() => setEditingClientIndex(null)} variant="secondary">Cancel</Button></div>
+                        <InputGroup label="Name (Excluded from Translation)"><TextInput value={tempClient.business_name || ''} onChange={e => setTempClient({...tempClient, business_name: e.target.value})} /></InputGroup>
+                        <FileUpload 
+                            label="Logo" 
+                            previewUrl={logoFile ? URL.createObjectURL(logoFile) : tempClient.logo_url} 
+                            onFileSelect={setLogoFile} 
+                            onClear={() => {setLogoFile(null); setTempClient({...tempClient, logo_url: ''})}} 
+                        />
+                        <div className="flex gap-4"><Button onClick={saveClient} variant="success">Save</Button><Button onClick={() => setEditingClientIndex(null)} variant="secondary">Cancel</Button></div>
                     </div>
                     </Card>
             )}

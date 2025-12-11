@@ -3,85 +3,67 @@ import React, { useState } from 'react';
 import { useContent } from '../../../context/ContentContext';
 import { ContactEmail } from '../../../types';
 import { Card, SectionHeader, InputGroup, TextInput, Button, FileUpload, LangTabs, TextArea, confirmDelete } from '../ui/AdminShared';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
+const storage = getStorage();
+
+async function uploadFileToStorage(file: File, path: string): Promise<string> {
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
+}
 
 export const SettingsManager: React.FC = () => {
     const { config, setConfig } = useContent();
     const [localConfig, setLocalConfig] = useState(config);
     const [configLang, setConfigLang] = useState<'en'|'si'|'ta'>('en');
 
+    // File states
+    const [logoLightFile, setLogoLightFile] = useState<File | null>(null);
+    const [logoDarkFile, setLogoDarkFile] = useState<File | null>(null);
+    const [loadingLogoFile, setLoadingLogoFile] = useState<File | null>(null);
+    const [footerLogoFile, setFooterLogoFile] = useState<File | null>(null);
+    const [whatsappIconFile, setWhatsappIconFile] = useState<File | null>(null);
+
     const [editingEmailId, setEditingEmailId] = useState<number | null>(null);
     const [tempEmail, setTempEmail] = useState<string>('');
 
-    const isBrandingDirty = 
-        localConfig.logoLight !== config.logoLight ||
-        localConfig.logoDark !== config.logoDark ||
-        localConfig.loadingLogo !== config.loadingLogo ||
-        localConfig.footerLogo !== config.footerLogo;
-
-    const isFooterContactDirty = 
-        localConfig.agencyTagline !== config.agencyTagline ||
-        localConfig.agencyTagline_si !== config.agencyTagline_si ||
-        localConfig.agencyTagline_ta !== config.agencyTagline_ta ||
-        localConfig.contactEmail !== config.contactEmail ||
-        localConfig.whatsappNumber !== config.whatsappNumber ||
-        localConfig.whatsappIcon !== config.whatsappIcon;
-
-    const isPrivacyDirty = JSON.stringify({
-        pp_introText: localConfig.pp_introText,
-        pp_introText_si: localConfig.pp_introText_si,
-        pp_introText_ta: localConfig.pp_introText_ta,
-        pp_dataText: localConfig.pp_dataText,
-        pp_dataText_si: localConfig.pp_dataText_si,
-        pp_dataText_ta: localConfig.pp_dataText_ta,
-        pp_dataList: localConfig.pp_dataList,
-        pp_dataList_si: localConfig.pp_dataList_si,
-        pp_dataList_ta: localConfig.pp_dataList_ta,
-        pp_usageText: localConfig.pp_usageText,
-        pp_usageText_si: localConfig.pp_usageText_si,
-        pp_usageText_ta: localConfig.pp_usageText_ta,
-        pp_usageList: localConfig.pp_usageList,
-        pp_usageList_si: localConfig.pp_usageList_si,
-        pp_usageList_ta: localConfig.pp_usageList_ta,
-        pp_thirdPartyText: localConfig.pp_thirdPartyText,
-        pp_thirdPartyText_si: localConfig.pp_thirdPartyText_si,
-        pp_thirdPartyText_ta: localConfig.pp_thirdPartyText_ta,
-        pp_contactText: localConfig.pp_contactText,
-        pp_contactText_si: localConfig.pp_contactText_si,
-        pp_contactText_ta: localConfig.pp_contactText_ta,
-    }) !== JSON.stringify({
-        pp_introText: config.pp_introText,
-        pp_introText_si: config.pp_introText_si,
-        pp_introText_ta: config.pp_introText_ta,
-        pp_dataText: config.pp_dataText,
-        pp_dataText_si: config.pp_dataText_si,
-        pp_dataText_ta: config.pp_dataText_ta,
-        pp_dataList: config.pp_dataList,
-        pp_dataList_si: config.pp_dataList_si,
-        pp_dataList_ta: config.pp_dataList_ta,
-        pp_usageText: config.pp_usageText,
-        pp_usageText_si: config.pp_usageText_si,
-        pp_usageText_ta: config.pp_usageText_ta,
-        pp_usageList: config.pp_usageList,
-        pp_usageList_si: config.pp_usageList_si,
-        pp_usageList_ta: config.pp_usageList_ta,
-        pp_thirdPartyText: config.pp_thirdPartyText,
-        pp_thirdPartyText_si: config.pp_thirdPartyText_si,
-        pp_thirdPartyText_ta: config.pp_thirdPartyText_ta,
-        pp_contactText: config.pp_contactText,
-        pp_contactText_si: config.pp_contactText_si,
-        pp_contactText_ta: config.pp_contactText_ta,
-    });
-
-    const saveBranding = () => {
-        setConfig(localConfig);
+    const saveBranding = async () => {
+        let updatedConfig = { ...localConfig };
+        try {
+            if (logoLightFile) updatedConfig.logoLight = await uploadFileToStorage(logoLightFile, `logos/logoLight_${Date.now()}`);
+            if (logoDarkFile) updatedConfig.logoDark = await uploadFileToStorage(logoDarkFile, `logos/logoDark_${Date.now()}`);
+            if (loadingLogoFile) updatedConfig.loadingLogo = await uploadFileToStorage(loadingLogoFile, `logos/loadingLogo_${Date.now()}`);
+            if (footerLogoFile) updatedConfig.footerLogo = await uploadFileToStorage(footerLogoFile, `logos/footerLogo_${Date.now()}`);
+        } catch(e) {
+            alert('Asset upload failed!');
+            return;
+        }
+        
+        setConfig(updatedConfig);
+        setLogoLightFile(null);
+        setLogoDarkFile(null);
+        setLoadingLogoFile(null);
+        setFooterLogoFile(null);
         alert("Branding assets updated!");
     };
 
-    const saveFooterContact = () => {
-        setConfig(localConfig);
+    const saveFooterContact = async () => {
+        let updatedConfig = { ...localConfig };
+        if (whatsappIconFile) {
+             try {
+                updatedConfig.whatsappIcon = await uploadFileToStorage(whatsappIconFile, `icons/whatsapp_${Date.now()}`);
+            } catch(e) {
+                alert('WhatsApp Icon upload failed!');
+                return;
+            }
+        }
+        setConfig(updatedConfig);
+        setWhatsappIconFile(null);
         alert("Footer & Contact settings updated!");
     };
-
+    
     const savePrivacyPolicy = () => {
         setConfig(localConfig);
         alert("Privacy Policy updated!");
@@ -106,7 +88,6 @@ export const SettingsManager: React.FC = () => {
             newList = (config.contactEmails || []).map(e => e.id === editingEmailId ? { ...e, email: tempEmail } : e);
         }
         setConfig({ ...config, contactEmails: newList });
-        setLocalConfig({ ...localConfig, contactEmails: newList });
         setEditingEmailId(null);
     };
 
@@ -114,7 +95,6 @@ export const SettingsManager: React.FC = () => {
         if (confirmDelete("Permanently remove this email address?")) {
             const newList = (config.contactEmails || []).filter(e => e.id !== id);
             setConfig({ ...config, contactEmails: newList });
-            setLocalConfig({ ...localConfig, contactEmails: newList });
         }
     };
 
@@ -127,18 +107,18 @@ export const SettingsManager: React.FC = () => {
     return (
         <div className="max-w-4xl mx-auto pb-20 space-y-8">
             <Card>
-            <SectionHeader title="Branding & Assets" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                <FileUpload label="Light Mode Logo (Nav)" previewUrl={localConfig.logoLight} onUpload={(b64) => setLocalConfig({ ...localConfig, logoLight: b64 })} />
-                <FileUpload label="Dark Mode Logo (Nav)" previewUrl={localConfig.logoDark} onUpload={(b64) => setLocalConfig({ ...localConfig, logoDark: b64 })} />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <FileUpload label="Loading Screen Logo" previewUrl={localConfig.loadingLogo} onUpload={(b64) => setLocalConfig({ ...localConfig, loadingLogo: b64 })} />
-                <FileUpload label="Footer Company Logo" previewUrl={localConfig.footerLogo} onUpload={(b64) => setLocalConfig({ ...localConfig, footerLogo: b64 })} />
-            </div>
-            <div className="mt-6 flex justify-end">
-                <Button onClick={saveBranding} variant="success" disabled={!isBrandingDirty}>Save Assets</Button>
-            </div>
+                <SectionHeader title="Branding & Assets" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <FileUpload label="Light Mode Logo (Nav)" previewUrl={logoLightFile ? URL.createObjectURL(logoLightFile) : localConfig.logoLight} onFileSelect={setLogoLightFile} />
+                    <FileUpload label="Dark Mode Logo (Nav)" previewUrl={logoDarkFile ? URL.createObjectURL(logoDarkFile) : localConfig.logoDark} onFileSelect={setLogoDarkFile} />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <FileUpload label="Loading Screen Logo" previewUrl={loadingLogoFile ? URL.createObjectURL(loadingLogoFile) : localConfig.loadingLogo} onFileSelect={setLoadingLogoFile} />
+                    <FileUpload label="Footer Company Logo" previewUrl={footerLogoFile ? URL.createObjectURL(footerLogoFile) : localConfig.footerLogo} onFileSelect={setFooterLogoFile} />
+                </div>
+                <div className="mt-6 flex justify-end">
+                    <Button onClick={saveBranding} variant="success">Save Assets</Button>
+                </div>
             </Card>
 
             <Card>
@@ -176,19 +156,19 @@ export const SettingsManager: React.FC = () => {
 
                 <SectionHeader title="Footer Config" />
                 <LangTabs active={configLang} onChange={setConfigLang} />
-                {configLang === 'en' && <InputGroup label="Agency Tagline (EN)"><TextInput value={localConfig.agencyTagline} onChange={e => setLocalConfig({ ...localConfig, agencyTagline: e.target.value })} /></InputGroup>}
+                {configLang === 'en' && <InputGroup label="Agency Tagline (EN)"><TextInput value={localConfig.agencyTagline || ''} onChange={e => setLocalConfig({ ...localConfig, agencyTagline: e.target.value })} /></InputGroup>}
                 {configLang === 'si' && <InputGroup label="Agency Tagline (SI)"><TextInput value={localConfig.agencyTagline_si || ''} onChange={e => setLocalConfig({ ...localConfig, agencyTagline_si: e.target.value })} /></InputGroup>}
                 {configLang === 'ta' && <InputGroup label="Agency Tagline (TA)"><TextInput value={localConfig.agencyTagline_ta || ''} onChange={e => setLocalConfig({ ...localConfig, agencyTagline_ta: e.target.value })} /></InputGroup>}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                <InputGroup label="Primary Email (Footer Link)" subLabel="Used in main footer 'Say Hello' section"><TextInput value={localConfig.contactEmail} onChange={e => setLocalConfig({ ...localConfig, contactEmail: e.target.value })} /></InputGroup>
-                <InputGroup label="WhatsApp Number"><TextInput value={localConfig.whatsappNumber} onChange={e => setLocalConfig({ ...localConfig, whatsappNumber: e.target.value })} /></InputGroup>
+                <InputGroup label="Primary Email (Footer Link)" subLabel="Used in main footer 'Say Hello' section"><TextInput value={localConfig.contactEmail || ''} onChange={e => setLocalConfig({ ...localConfig, contactEmail: e.target.value })} /></InputGroup>
+                <InputGroup label="WhatsApp Number"><TextInput value={localConfig.whatsappNumber || ''} onChange={e => setLocalConfig({ ...localConfig, whatsappNumber: e.target.value })} /></InputGroup>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FileUpload label="WhatsApp Icon" previewUrl={localConfig.whatsappIcon} onUpload={b64 => setLocalConfig({ ...localConfig, whatsappIcon: b64 })} recommendedSize="SVG or PNG" />
+                <FileUpload label="WhatsApp Icon" previewUrl={whatsappIconFile ? URL.createObjectURL(whatsappIconFile) : localConfig.whatsappIcon} onFileSelect={setWhatsappIconFile} recommendedSize="SVG or PNG" />
                 </div>
                 <div className="mt-6 flex justify-end">
-                <Button onClick={saveFooterContact} variant="success" disabled={!isFooterContactDirty}>Save Config</Button>
+                <Button onClick={saveFooterContact} variant="success">Save Config</Button>
             </div>
             </Card>
 
@@ -196,7 +176,6 @@ export const SettingsManager: React.FC = () => {
                 <SectionHeader title="Privacy Policy Content" />
                 <LangTabs active={configLang} onChange={setConfigLang} />
                 <div className="space-y-6">
-                    {/* Intro */}
                     <InputGroup label="1. Introduction Text">
                         <TextArea 
                             rows={3} 
@@ -205,7 +184,6 @@ export const SettingsManager: React.FC = () => {
                         />
                     </InputGroup>
                     
-                    {/* Data Collection */}
                     <div className="grid grid-cols-1 gap-4">
                         <InputGroup label="2. Data Collection Text">
                              <TextArea 
@@ -223,7 +201,6 @@ export const SettingsManager: React.FC = () => {
                         </InputGroup>
                     </div>
 
-                    {/* Usage */}
                     <div className="grid grid-cols-1 gap-4">
                         <InputGroup label="3. Usage Text">
                              <TextArea 
@@ -241,7 +218,6 @@ export const SettingsManager: React.FC = () => {
                         </InputGroup>
                     </div>
 
-                     {/* Third Party */}
                     <InputGroup label="4. Third Party Text">
                         <TextArea 
                             rows={3} 
@@ -250,7 +226,6 @@ export const SettingsManager: React.FC = () => {
                         />
                     </InputGroup>
 
-                     {/* Contact */}
                     <InputGroup label="5. Contact Text">
                         <TextArea 
                             rows={3} 
@@ -260,9 +235,7 @@ export const SettingsManager: React.FC = () => {
                     </InputGroup>
                 </div>
                  <div className="mt-6 flex justify-end">
-                    {isPrivacyDirty && (
-                        <Button onClick={savePrivacyPolicy} variant="success">Save Policy Content</Button>
-                    )}
+                    <Button onClick={savePrivacyPolicy} variant="success">Save Policy Content</Button>
                 </div>
             </Card>
         </div>

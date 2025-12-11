@@ -3,6 +3,16 @@ import React, { useState } from 'react';
 import { useContent } from '../../../context/ContentContext';
 import { TeamMember, SocialLink } from '../../../types';
 import { Card, SectionHeader, InputGroup, TextInput, TextArea, Button, FileUpload, LangTabs, confirmDelete, Toggle } from '../ui/AdminShared';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
+const storage = getStorage();
+
+async function uploadFileToStorage(file: File, path: string): Promise<string> {
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
+}
 
 export const AboutManager: React.FC = () => {
     const { config, setConfig } = useContent();
@@ -12,15 +22,16 @@ export const AboutManager: React.FC = () => {
     // --- Team State ---
     const [editingTeamId, setEditingTeamId] = useState<number | null>(null);
     const [tempTeam, setTempTeam] = useState<Partial<TeamMember>>({});
-    const [originalTeam, setOriginalTeam] = useState<Partial<TeamMember>>({});
-    const [teamLang, setTeamLang] = useState<'en'|'si'|'ta'>('en');
+    const [teamImageFile, setTeamImageFile] = useState<File | null>(null);
 
     // --- Social State ---
     const [editingSocialId, setEditingSocialId] = useState<number | null>(null);
     const [tempSocial, setTempSocial] = useState<Partial<SocialLink>>({});
-    const [originalSocial, setOriginalSocial] = useState<Partial<SocialLink>>({});
+    const [socialIconFile, setSocialIconFile] = useState<File | null>(null);
+    
+    // --- About Logo State ---
+    const [aboutLogoFile, setAboutLogoFile] = useState<File | null>(null);
 
-    // Dirty Checks
     const isAboutContentDirty = 
         localConfig.aboutDescription !== config.aboutDescription ||
         localConfig.aboutDescription_si !== config.aboutDescription_si ||
@@ -28,39 +39,55 @@ export const AboutManager: React.FC = () => {
         localConfig.aboutSpatial !== config.aboutSpatial ||
         localConfig.aboutSpatial_si !== config.aboutSpatial_si ||
         localConfig.aboutSpatial_ta !== config.aboutSpatial_ta ||
-        localConfig.aboutLogo !== config.aboutLogo;
-    
-    const isTeamDirty = JSON.stringify(tempTeam) !== JSON.stringify(originalTeam);
-    const isSocialDirty = JSON.stringify(tempSocial) !== JSON.stringify(originalSocial);
+        aboutLogoFile !== null;
 
-    // Handlers
-    const saveAboutContent = () => {
-        setConfig(localConfig);
+    const saveAboutContent = async () => {
+        let updatedConfig = { ...localConfig };
+        if (aboutLogoFile) {
+            try {
+                const path = `config/${Date.now()}_${aboutLogoFile.name}`;
+                updatedConfig.aboutLogo = await uploadFileToStorage(aboutLogoFile, path);
+            } catch (error) {
+                alert("Logo upload failed.");
+                return;
+            }
+        }
+        setConfig(updatedConfig);
+        setAboutLogoFile(null);
         alert("About content updated!");
     };
 
-    // Team CRUD
     const startEditTeam = (member?: TeamMember) => {
         if (member) {
             setEditingTeamId(member.id);
             setTempTeam({ ...member });
-            setOriginalTeam({ ...member });
         } else {
             setEditingTeamId(-1);
-            const empty = { id: Date.now(), name: '', role: '', bio: '', image: '', figLabel: 'Fig [01]', isVisible: true };
-            setTempTeam(empty);
-            setOriginalTeam(empty);
+            setTempTeam({ id: Date.now(), name: '', role: '', bio: '', image: '', figLabel: 'Fig [01]', isVisible: true });
         }
+        setTeamImageFile(null);
     };
 
-    const saveTeam = () => {
+    const saveTeam = async () => {
         if (!tempTeam.name) return alert("Name is required");
+        let updatedMember = { ...tempTeam };
+
+        if (teamImageFile) {
+             try {
+                const path = `team/${Date.now()}_${teamImageFile.name}`;
+                updatedMember.image = await uploadFileToStorage(teamImageFile, path);
+            } catch (error) {
+                alert("Team member image upload failed.");
+                return;
+            }
+        }
+
         let members = [...(config.teamMembers || [])];
         if (editingTeamId === -1) {
-            members.push(tempTeam as TeamMember);
+            members.push(updatedMember as TeamMember);
         } else {
             const index = members.findIndex(m => m.id === editingTeamId);
-            if (index !== -1) members[index] = tempTeam as TeamMember;
+            if (index !== -1) members[index] = updatedMember as TeamMember;
         }
         setConfig({ ...config, teamMembers: members });
         setEditingTeamId(null);
@@ -78,28 +105,35 @@ export const AboutManager: React.FC = () => {
         setConfig({ ...config, teamMembers: members });
     };
 
-    // Social CRUD
     const startEditSocial = (link?: SocialLink) => {
         if (link) {
             setEditingSocialId(link.id);
             setTempSocial({ ...link });
-            setOriginalSocial({ ...link });
         } else {
             setEditingSocialId(-1);
-            const empty = { id: Date.now(), platform: '', url: '', icon: '', isVisible: true };
-            setTempSocial(empty);
-            setOriginalSocial(empty);
+            setTempSocial({ id: Date.now(), platform: '', url: '', icon: '', isVisible: true });
         }
+        setSocialIconFile(null);
     };
 
-    const saveSocial = () => {
+    const saveSocial = async () => {
         if (!tempSocial.platform) return alert("Platform name required");
+        let updatedLink = { ...tempSocial };
+        if (socialIconFile) {
+            try {
+                const path = `social_icons/${Date.now()}_${socialIconFile.name}`;
+                updatedLink.icon = await uploadFileToStorage(socialIconFile, path);
+            } catch (error) {
+                alert("Icon upload failed.");
+                return;
+            }
+        }
         let links = [...(config.socialLinks || [])];
         if (editingSocialId === -1) {
-            links.push(tempSocial as SocialLink);
+            links.push(updatedLink as SocialLink);
         } else {
             const index = links.findIndex(s => s.id === editingSocialId);
-            if (index !== -1) links[index] = tempSocial as SocialLink;
+            if (index !== -1) links[index] = updatedLink as SocialLink;
         }
         setConfig({ ...config, socialLinks: links });
         setEditingSocialId(null);
@@ -107,8 +141,7 @@ export const AboutManager: React.FC = () => {
 
     const deleteSocial = (id: number) => {
         if (confirmDelete("Remove social link?")) {
-            const newConfig = { ...config, socialLinks: config.socialLinks.filter(s => s.id !== id) };
-            setConfig(newConfig);
+            setConfig({ ...config, socialLinks: config.socialLinks.filter(s => s.id !== id) });
         }
     };
 
@@ -116,10 +149,9 @@ export const AboutManager: React.FC = () => {
         const links = config.socialLinks.map(s => s.id === id ? { ...s, isVisible: visible } : s);
         setConfig({ ...config, socialLinks: links });
     };
-
+    
     return (
         <div className="max-w-4xl mx-auto pb-20 space-y-12">
-            {/* 1. Main Content */}
             <Card>
                 <SectionHeader title="About Page Content" />
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -145,7 +177,7 @@ export const AboutManager: React.FC = () => {
                         )}
                     </div>
                     <div>
-                        <FileUpload label="About Page Logo" previewUrl={localConfig.aboutLogo} onUpload={b64 => setLocalConfig({ ...localConfig, aboutLogo: b64 })} recommendedSize="Portrait/Vertical" />
+                        <FileUpload label="About Page Logo" previewUrl={aboutLogoFile ? URL.createObjectURL(aboutLogoFile) : localConfig.aboutLogo} onFileSelect={setAboutLogoFile} recommendedSize="Portrait/Vertical" />
                     </div>
                 </div>
                 <div className="mt-6 flex justify-end">
@@ -153,7 +185,6 @@ export const AboutManager: React.FC = () => {
                 </div>
             </Card>
 
-            {/* 2. Team Members */}
             <Card>
                 <SectionHeader title="Team Members" action={<Button onClick={() => startEditTeam()} variant="secondary">+ Add Member</Button>} />
                 {editingTeamId === null ? (
@@ -175,13 +206,12 @@ export const AboutManager: React.FC = () => {
                 ) : (
                     <div className="bg-gray-50 p-6 rounded-lg animate-in fade-in">
                         <h4 className="font-bold mb-4">{editingTeamId === -1 ? 'Add Member' : 'Edit Member'}</h4>
-                        <InputGroup label="Name (Excluded from Translation)"><TextInput value={tempTeam.name} onChange={e => setTempTeam({...tempTeam, name: e.target.value})} /></InputGroup>
-                        <hr className="my-4 border-gray-200" />
                         <LangTabs active={teamLang} onChange={setTeamLang} />
+                        <InputGroup label="Name (Excluded from Translation)"><TextInput value={tempTeam.name || ''} onChange={e => setTempTeam({...tempTeam, name: e.target.value})} /></InputGroup>
                         {teamLang === 'en' && (
                             <>
-                                <InputGroup label="Role (EN)"><TextInput value={tempTeam.role} onChange={e => setTempTeam({...tempTeam, role: e.target.value})} /></InputGroup>
-                                <InputGroup label="Bio (EN)"><TextArea value={tempTeam.bio} onChange={e => setTempTeam({...tempTeam, bio: e.target.value})} rows={3} /></InputGroup>
+                                <InputGroup label="Role (EN)"><TextInput value={tempTeam.role || ''} onChange={e => setTempTeam({...tempTeam, role: e.target.value})} /></InputGroup>
+                                <InputGroup label="Bio (EN)"><TextArea value={tempTeam.bio || ''} onChange={e => setTempTeam({...tempTeam, bio: e.target.value})} rows={3} /></InputGroup>
                             </>
                         )}
                         {teamLang === 'si' && (
@@ -191,22 +221,21 @@ export const AboutManager: React.FC = () => {
                             </>
                         )}
                         {teamLang === 'ta' && (
-                            <>
+                             <>
                                 <InputGroup label="Role (TA)"><TextInput value={tempTeam.role_ta || ''} onChange={e => setTempTeam({...tempTeam, role_ta: e.target.value})} /></InputGroup>
                                 <InputGroup label="Bio (TA)"><TextArea value={tempTeam.bio_ta || ''} onChange={e => setTempTeam({...tempTeam, bio_ta: e.target.value})} rows={3} /></InputGroup>
                             </>
                         )}
                         <div className="grid grid-cols-2 gap-4 mt-4">
-                                <InputGroup label="Fig Label"><TextInput value={tempTeam.figLabel} onChange={e => setTempTeam({...tempTeam, figLabel: e.target.value})} /></InputGroup>
-                                <FileUpload label="Profile Photo" previewUrl={tempTeam.image} onUpload={b64 => setTempTeam({...tempTeam, image: b64})} />
+                                <InputGroup label="Fig Label"><TextInput value={tempTeam.figLabel || ''} onChange={e => setTempTeam({...tempTeam, figLabel: e.target.value})} /></InputGroup>
+                                <FileUpload label="Profile Photo" previewUrl={teamImageFile ? URL.createObjectURL(teamImageFile) : tempTeam.image} onFileSelect={setTeamImageFile} />
                         </div>
-                        <div className="flex gap-4 mt-4"><Button onClick={saveTeam} variant="success" disabled={!isTeamDirty}>Save</Button><Button onClick={() => setEditingTeamId(null)} variant="secondary">Cancel</Button></div>
+                        <div className="flex gap-4 mt-4"><Button onClick={saveTeam} variant="success">Save</Button><Button onClick={() => setEditingTeamId(null)} variant="secondary">Cancel</Button></div>
                     </div>
                 )}
             </Card>
 
-                {/* 3. Social Media */}
-                <Card>
+            <Card>
                 <SectionHeader title="Social Media Links" action={<Button onClick={() => startEditSocial()} variant="secondary">+ Add Link</Button>} />
                     {editingSocialId === null ? (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -229,10 +258,10 @@ export const AboutManager: React.FC = () => {
                     <div className="bg-gray-50 p-6 rounded-lg animate-in fade-in">
                         <h4 className="font-bold mb-4">{editingSocialId === -1 ? 'Add Social Link' : 'Edit Social Link'}</h4>
                         <div className="space-y-4">
-                            <InputGroup label="Platform Name"><TextInput value={tempSocial.platform} onChange={e => setTempSocial({...tempSocial, platform: e.target.value})} /></InputGroup>
-                            <InputGroup label="URL"><TextInput value={tempSocial.url} onChange={e => setTempSocial({...tempSocial, url: e.target.value})} /></InputGroup>
-                            <FileUpload label="Icon" previewUrl={tempSocial.icon} onUpload={b64 => setTempSocial({...tempSocial, icon: b64})} recommendedSize="Small PNG" />
-                            <div className="flex gap-4"><Button onClick={saveSocial} variant="success" disabled={!isSocialDirty}>Save</Button><Button onClick={() => setEditingSocialId(null)} variant="secondary">Cancel</Button></div>
+                            <InputGroup label="Platform Name"><TextInput value={tempSocial.platform || ''} onChange={e => setTempSocial({...tempSocial, platform: e.target.value})} /></InputGroup>
+                            <InputGroup label="URL"><TextInput value={tempSocial.url || ''} onChange={e => setTempSocial({...tempSocial, url: e.target.value})} /></InputGroup>
+                            <FileUpload label="Icon" previewUrl={socialIconFile ? URL.createObjectURL(socialIconFile) : tempSocial.icon} onFileSelect={setSocialIconFile} recommendedSize="Small PNG" />
+                            <div className="flex gap-4"><Button onClick={saveSocial} variant="success">Save</Button><Button onClick={() => setEditingSocialId(null)} variant="secondary">Cancel</Button></div>
                         </div>
                     </div>
                 )}
