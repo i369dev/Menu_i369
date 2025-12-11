@@ -27,36 +27,38 @@ interface ContentContextType {
 const ContentContext = createContext<ContentContextType | undefined>(undefined);
 
 export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [projects, setProjectsState] = useState<Project[]>(() => {
-        const saved = typeof window !== 'undefined' ? localStorage.getItem('i369-cms-projects') : null;
-        return saved ? JSON.parse(saved) : initialProjects;
-    });
+    const [isHydrated, setIsHydrated] = useState(false);
 
-    const [curatedItems, setCuratedItemsState] = useState<CuratedItem[]>(() => {
-        const saved = typeof window !== 'undefined' ? localStorage.getItem('i369-cms-curation') : null;
-        return saved ? JSON.parse(saved) : initialCuratedItems;
-    });
+    const [projects, setProjectsState] = useState<Project[]>(initialProjects);
+    const [curatedItems, setCuratedItemsState] = useState<CuratedItem[]>(initialCuratedItems);
+    const [orders, setOrdersState] = useState<Order[]>([]);
+    const [config, setConfigState] = useState<SiteConfig>(initialConfig);
+    const [trustedClients, setTrustedClientsState] = useState<TrustedClient[]>(initialClients);
 
-    const [orders, setOrdersState] = useState<Order[]>(() => {
-        const saved = typeof window !== 'undefined' ? localStorage.getItem('i369-cms-orders') : null;
-        return saved ? JSON.parse(saved) : [];
-    });
+    useEffect(() => {
+        const savedProjects = localStorage.getItem('i369-cms-projects');
+        if (savedProjects) setProjectsState(JSON.parse(savedProjects));
 
-    const [config, setConfigState] = useState<SiteConfig>(() => {
-        const saved = typeof window !== 'undefined' ? localStorage.getItem('i369-cms-config') : null;
-        return saved ? JSON.parse(saved) : initialConfig;
-    });
+        const savedCuration = localStorage.getItem('i369-cms-curation');
+        if (savedCuration) setCuratedItemsState(JSON.parse(savedCuration));
+        
+        const savedOrders = localStorage.getItem('i369-cms-orders');
+        if (savedOrders) setOrdersState(JSON.parse(savedOrders));
 
-    const [trustedClients, setTrustedClientsState] = useState<TrustedClient[]>(() => {
-        const saved = typeof window !== 'undefined' ? localStorage.getItem('i369-cms-clients') : null;
-        return saved ? JSON.parse(saved) : initialClients;
-    });
+        const savedConfig = localStorage.getItem('i369-cms-config');
+        if (savedConfig) setConfigState(JSON.parse(savedConfig));
+        
+        const savedClients = localStorage.getItem('i369-cms-clients');
+        if (savedClients) setTrustedClientsState(JSON.parse(savedClients));
 
-    useEffect(() => { if (typeof window !== 'undefined') localStorage.setItem('i369-cms-projects', JSON.stringify(projects)); }, [projects]);
-    useEffect(() => { if (typeof window !== 'undefined') localStorage.setItem('i369-cms-curation', JSON.stringify(curatedItems)); }, [curatedItems]);
-    useEffect(() => { if (typeof window !== 'undefined') localStorage.setItem('i369-cms-orders', JSON.stringify(orders)); }, [orders]);
-    useEffect(() => { if (typeof window !== 'undefined') localStorage.setItem('i369-cms-config', JSON.stringify(config)); }, [config]);
-    useEffect(() => { if (typeof window !== 'undefined') localStorage.setItem('i369-cms-clients', JSON.stringify(trustedClients)); }, [trustedClients]);
+        setIsHydrated(true);
+    }, []);
+    
+    useEffect(() => { if (isHydrated) localStorage.setItem('i369-cms-projects', JSON.stringify(projects)); }, [projects, isHydrated]);
+    useEffect(() => { if (isHydrated) localStorage.setItem('i369-cms-curation', JSON.stringify(curatedItems)); }, [curatedItems, isHydrated]);
+    useEffect(() => { if (isHydrated) localStorage.setItem('i369-cms-orders', JSON.stringify(orders)); }, [orders, isHydrated]);
+    useEffect(() => { if (isHydrated) localStorage.setItem('i369-cms-config', JSON.stringify(config)); }, [config, isHydrated]);
+    useEffect(() => { if (isHydrated) localStorage.setItem('i369-cms-clients', JSON.stringify(trustedClients)); }, [trustedClients, isHydrated]);
 
     const setProjects = (p: Project[]) => setProjectsState(p);
     const deleteProject = (id: number) => setProjectsState(prevProjects => prevProjects.filter(p => p.id !== id));
