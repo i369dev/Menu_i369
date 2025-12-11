@@ -5,9 +5,8 @@ import { TrustedClient } from '../../../types';
 import { Card, SectionHeader, InputGroup, TextInput, Button, FileUpload, confirmDelete, Toggle } from '../ui/AdminShared';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-const storage = getStorage();
-
 async function uploadFileToStorage(file: File, path: string): Promise<string> {
+    const storage = getStorage();
     const storageRef = ref(storage, path);
     await uploadBytes(storageRef, file);
     const downloadURL = await getDownloadURL(storageRef);

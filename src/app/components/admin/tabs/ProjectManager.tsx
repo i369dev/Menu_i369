@@ -1,13 +1,12 @@
 
 import React, { useState } from 'react';
 import { useContent } from '../../../context/ContentContext';
-import { Project } from '../../../types';
+import { Project, Partial } from '../../../types';
 import { Card, SectionHeader, InputGroup, TextInput, TextArea, Button, FileUpload, MultiFileUpload, LangTabs, confirmDelete, Toggle } from '../ui/AdminShared';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-const storage = getStorage();
-
 async function uploadFileToStorage(file: File, path: string): Promise<string> {
+    const storage = getStorage();
     const storageRef = ref(storage, path);
     await uploadBytes(storageRef, file);
     const downloadURL = await getDownloadURL(storageRef);
@@ -19,7 +18,7 @@ export const ProjectManager: React.FC = () => {
 
     const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
     const [tempProject, setTempProject] = useState<Partial<Project>>({});
-    const [originalProject, setOriginalProject] = useState<Partial.Project>>({});
+    const [originalProject, setOriginalProject] = useState<Partial<Project>>({});
     const [projectLang, setProjectLang] = useState<'en'|'si'|'ta'>('en'); 
 
     // New state for file objects

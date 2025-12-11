@@ -5,9 +5,8 @@ import { TeamMember, SocialLink } from '../../../types';
 import { Card, SectionHeader, InputGroup, TextInput, TextArea, Button, FileUpload, LangTabs, confirmDelete, Toggle } from '../ui/AdminShared';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-const storage = getStorage();
-
 async function uploadFileToStorage(file: File, path: string): Promise<string> {
+    const storage = getStorage();
     const storageRef = ref(storage, path);
     await uploadBytes(storageRef, file);
     const downloadURL = await getDownloadURL(storageRef);
@@ -23,6 +22,7 @@ export const AboutManager: React.FC = () => {
     const [editingTeamId, setEditingTeamId] = useState<number | null>(null);
     const [tempTeam, setTempTeam] = useState<Partial<TeamMember>>({});
     const [teamImageFile, setTeamImageFile] = useState<File | null>(null);
+    const [teamLang, setTeamLang] = useState<'en'|'si'|'ta'>('en');
 
     // --- Social State ---
     const [editingSocialId, setEditingSocialId] = useState<number | null>(null);
@@ -206,8 +206,8 @@ export const AboutManager: React.FC = () => {
                 ) : (
                     <div className="bg-gray-50 p-6 rounded-lg animate-in fade-in">
                         <h4 className="font-bold mb-4">{editingTeamId === -1 ? 'Add Member' : 'Edit Member'}</h4>
-                        <LangTabs active={teamLang} onChange={setTeamLang} />
                         <InputGroup label="Name (Excluded from Translation)"><TextInput value={tempTeam.name || ''} onChange={e => setTempTeam({...tempTeam, name: e.target.value})} /></InputGroup>
+                        <LangTabs active={teamLang} onChange={setTeamLang} />
                         {teamLang === 'en' && (
                             <>
                                 <InputGroup label="Role (EN)"><TextInput value={tempTeam.role || ''} onChange={e => setTempTeam({...tempTeam, role: e.target.value})} /></InputGroup>
