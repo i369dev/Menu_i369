@@ -55,15 +55,14 @@ export const AboutManager: React.FC = () => {
 
     const saveTeam = () => {
         if (!tempTeam.name) return alert("Name is required");
-        const members = [...(config.teamMembers || [])];
+        let members = [...(config.teamMembers || [])];
         if (editingTeamId === -1) {
             members.push(tempTeam as TeamMember);
         } else {
             const index = members.findIndex(m => m.id === editingTeamId);
             if (index !== -1) members[index] = tempTeam as TeamMember;
         }
-        const newConfig = { ...config, teamMembers: members };
-        setConfig(newConfig);
+        setConfig({ ...config, teamMembers: members });
         setEditingTeamId(null);
     };
 
@@ -76,8 +75,7 @@ export const AboutManager: React.FC = () => {
 
     const toggleTeamVisibility = (id: number, visible: boolean) => {
         const members = config.teamMembers.map(m => m.id === id ? { ...m, isVisible: visible } : m);
-        const newConfig = { ...config, teamMembers: members };
-        setConfig(newConfig);
+        setConfig({ ...config, teamMembers: members });
     };
 
     // Social CRUD
@@ -96,15 +94,14 @@ export const AboutManager: React.FC = () => {
 
     const saveSocial = () => {
         if (!tempSocial.platform) return alert("Platform name required");
-        const links = [...(config.socialLinks || [])];
+        let links = [...(config.socialLinks || [])];
         if (editingSocialId === -1) {
             links.push(tempSocial as SocialLink);
         } else {
             const index = links.findIndex(s => s.id === editingSocialId);
             if (index !== -1) links[index] = tempSocial as SocialLink;
         }
-        const newConfig = { ...config, socialLinks: links };
-        setConfig(newConfig);
+        setConfig({ ...config, socialLinks: links });
         setEditingSocialId(null);
     };
 
@@ -117,8 +114,7 @@ export const AboutManager: React.FC = () => {
 
     const toggleSocialVisibility = (id: number, visible: boolean) => {
         const links = config.socialLinks.map(s => s.id === id ? { ...s, isVisible: visible } : s);
-        const newConfig = { ...config, socialLinks: links };
-        setConfig(newConfig);
+        setConfig({ ...config, socialLinks: links });
     };
 
     return (
@@ -162,7 +158,7 @@ export const AboutManager: React.FC = () => {
                 <SectionHeader title="Team Members" action={<Button onClick={() => startEditTeam()} variant="secondary">+ Add Member</Button>} />
                 {editingTeamId === null ? (
                     <div className="space-y-4">
-                        {config.teamMembers?.map(member => (
+                        {(config.teamMembers || []).map(member => (
                             <div key={member.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 bg-white">
                                 <img src={member.image} className={`w-12 h-12 rounded-full object-cover ${member.isVisible === false ? 'opacity-50 grayscale' : ''}`} alt="" />
                                 <div className="flex-1">
@@ -214,7 +210,7 @@ export const AboutManager: React.FC = () => {
                 <SectionHeader title="Social Media Links" action={<Button onClick={() => startEditSocial()} variant="secondary">+ Add Link</Button>} />
                     {editingSocialId === null ? (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {config.socialLinks?.map(link => (
+                        {(config.socialLinks || []).map(link => (
                             <div key={link.id} className={`flex items-center gap-3 p-3 border rounded hover:bg-gray-50 ${link.isVisible === false ? 'opacity-60 bg-gray-100' : ''}`}>
                                 <img src={link.icon} className="w-8 h-8 object-contain" alt="" />
                                 <div className="flex-1 min-w-0">

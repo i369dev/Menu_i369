@@ -9,7 +9,6 @@ export const SettingsManager: React.FC = () => {
     const [localConfig, setLocalConfig] = useState(config);
     const [configLang, setConfigLang] = useState<'en'|'si'|'ta'>('en');
 
-    // Email State
     const [editingEmailId, setEditingEmailId] = useState<number | null>(null);
     const [tempEmail, setTempEmail] = useState<string>('');
 
@@ -27,7 +26,6 @@ export const SettingsManager: React.FC = () => {
         localConfig.whatsappNumber !== config.whatsappNumber ||
         localConfig.whatsappIcon !== config.whatsappIcon;
 
-    // Strict Privacy Policy Dirty Check
     const isPrivacyDirty = JSON.stringify({
         pp_introText: localConfig.pp_introText,
         pp_introText_si: localConfig.pp_introText_si,
@@ -89,7 +87,6 @@ export const SettingsManager: React.FC = () => {
         alert("Privacy Policy updated!");
     };
 
-    // --- Email CRUD ---
     const startEditEmail = (emailObj?: ContactEmail) => {
         if (emailObj) {
             setEditingEmailId(emailObj.id);
@@ -102,16 +99,14 @@ export const SettingsManager: React.FC = () => {
 
     const saveEmail = () => {
         if (!tempEmail) return alert("Email address required");
-        const currentList = config.contactEmails || [];
         let newList;
-        
         if (editingEmailId === -1) {
-            newList = [...currentList, { id: Date.now(), email: tempEmail }];
+            newList = [...(config.contactEmails || []), { id: Date.now(), email: tempEmail }];
         } else {
-            newList = currentList.map(e => e.id === editingEmailId ? { ...e, email: tempEmail } : e);
+            newList = (config.contactEmails || []).map(e => e.id === editingEmailId ? { ...e, email: tempEmail } : e);
         }
-        
         setConfig({ ...config, contactEmails: newList });
+        setLocalConfig({ ...localConfig, contactEmails: newList });
         setEditingEmailId(null);
     };
 
@@ -119,10 +114,10 @@ export const SettingsManager: React.FC = () => {
         if (confirmDelete("Permanently remove this email address?")) {
             const newList = (config.contactEmails || []).filter(e => e.id !== id);
             setConfig({ ...config, contactEmails: newList });
+            setLocalConfig({ ...localConfig, contactEmails: newList });
         }
     };
 
-    // Helper to handle list text area (split by newline)
     const getListText = (list: string[] | undefined) => (list || []).join('\n');
     const updateListFromText = (text: string, field: string, langSuffix: string) => {
         const list = text.split('\n').filter(line => line.trim() !== '');
@@ -149,7 +144,7 @@ export const SettingsManager: React.FC = () => {
             <Card>
                 <SectionHeader title="Contact Emails" action={<Button onClick={() => startEditEmail()} variant="secondary" className="text-xs">+ Add Email</Button>} />
                 <div className="space-y-3 mb-6">
-                    {(config.contactEmails || []).map(email => (
+                    {(localConfig.contactEmails || []).map(email => (
                          <div key={email.id} className="flex items-center justify-between p-3 bg-gray-50 rounded border border-gray-100">
                             {editingEmailId === email.id ? (
                                 <div className="flex gap-2 w-full">
@@ -265,7 +260,6 @@ export const SettingsManager: React.FC = () => {
                     </InputGroup>
                 </div>
                  <div className="mt-6 flex justify-end">
-                    {/* Conditional Rendering based on dirty state */}
                     {isPrivacyDirty && (
                         <Button onClick={savePrivacyPolicy} variant="success">Save Policy Content</Button>
                     )}

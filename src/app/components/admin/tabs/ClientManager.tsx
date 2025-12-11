@@ -27,11 +27,12 @@ export const ClientManager: React.FC = () => {
 
     const saveClient = () => {
         if (!tempClient.business_name) return alert("Business Name is required");
-        const newClients = [...trustedClients];
+        
+        let newClients;
         if (editingClientIndex === -1) {
-            newClients.push(tempClient as TrustedClient);
-        } else if (editingClientIndex !== null) {
-            newClients[editingClientIndex] = tempClient as TrustedClient;
+            newClients = [...trustedClients, tempClient as TrustedClient];
+        } else {
+            newClients = trustedClients.map((c, i) => i === editingClientIndex ? tempClient as TrustedClient : c);
         }
         setTrustedClients(newClients);
         setEditingClientIndex(null);

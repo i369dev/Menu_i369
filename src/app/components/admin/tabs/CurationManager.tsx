@@ -52,8 +52,7 @@ export const CurationManager: React.FC = () => {
     const deleteItem = (id: number, e: React.MouseEvent) => {
         e.stopPropagation();
         if (confirmDelete("Permanently delete this showcase item?")) {
-            const updatedItems = curatedItems.filter(i => i.id !== id);
-            setCuratedItems(updatedItems);
+            setCuratedItems(curatedItems.filter(i => i.id !== id));
         }
     };
 

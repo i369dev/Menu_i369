@@ -5,19 +5,15 @@ import { Project } from '../../../types';
 import { Card, SectionHeader, InputGroup, TextInput, TextArea, Button, FileUpload, MultiFileUpload, LangTabs, confirmDelete, Toggle } from '../ui/AdminShared';
 
 export const ProjectManager: React.FC = () => {
-    // 1. Hook into the "Backend" (Context)
-    const { projects, setProjects, deleteProject } = useContent();
+    const { projects, setProjects } = useContent();
 
-    // 2. Local State for UI Management
     const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
     const [tempProject, setTempProject] = useState<Partial<Project>>({});
     const [originalProject, setOriginalProject] = useState<Partial<Project>>({});
     const [projectLang, setProjectLang] = useState<'en'|'si'|'ta'>('en'); 
 
-    // 3. Dirty Checking Logic for Save Button
     const isProjectDirty = JSON.stringify(tempProject) !== JSON.stringify(originalProject);
 
-    // 4. Create / Edit Handler
     const startEditProject = (p?: Project) => {
         if (p) {
             setEditingProjectId(p.id);
@@ -26,7 +22,6 @@ export const ProjectManager: React.FC = () => {
             setOriginalProject(copy);
         } else {
             setEditingProjectId(-1);
-            // Default Empty State
             const empty = {
                 id: Date.now(),
                 title: '', subtitle: '', year: 'Rs. 0', location: 'ISLAND-WIDE', category: 'Menu Design', image: '', video: '', description: '', services: [], detailImages: [], themeColor: '#ffffff', textColor: '#000000', pricing: { designOnly: 0, designAndPrint: { minQty: 10, basePrice: 0, unitPrice: 0 } },
@@ -37,29 +32,23 @@ export const ProjectManager: React.FC = () => {
         }
     };
 
-    // 5. Save Handler (Create/Update)
     const saveProject = () => {
         if (!tempProject.title) return alert("Title is required");
         
-        const newProjects = [...projects];
+        let newProjects;
         if (editingProjectId === -1) {
-            newProjects.push(tempProject as Project);
+            newProjects = [...projects, tempProject as Project];
         } else {
-            const index = newProjects.findIndex(p => p.id === editingProjectId);
-            if (index !== -1) newProjects[index] = tempProject as Project;
+            newProjects = projects.map(p => p.id === editingProjectId ? tempProject as Project : p);
         }
         
-        // Push changes to "Backend"
         setProjects(newProjects);
         setEditingProjectId(null);
     };
 
-    // 6. Delete Handler (Refactored for Robustness)
     const handleDeleteClick = (id: number) => {
-        // Strict User Confirmation
         if (confirmDelete("Permanently delete this project? This action cannot be undone.")) {
-            // Call "Backend" API
-            deleteProject(id);
+            setProjects(projects.filter(p => p.id !== id));
         }
     };
 
@@ -68,7 +57,6 @@ export const ProjectManager: React.FC = () => {
         setProjects(updated);
     };
 
-    // 7. Render View: Editor Mode
     if (editingProjectId !== null) {
         return (
             <div className="max-w-5xl mx-auto pb-20">
@@ -114,10 +102,10 @@ export const ProjectManager: React.FC = () => {
                         
                         {/* Pricing */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <InputGroup label="price_design_only" subLabel="Design Only Price (Rs)">
+                            <InputGroup label="Design Only Price (Rs)" subLabel="Set the price for design-only services.">
                                 <TextInput type="number" value={tempProject.pricing?.designOnly || 0} onChange={e => setTempProject({...tempProject, pricing: { ...tempProject.pricing!, designOnly: parseFloat(e.target.value) || 0 }})} />
                             </InputGroup>
-                            <InputGroup label="price_design_and_print" subLabel="Base Design & Print Price (Rs)">
+                            <InputGroup label="Base Design & Print Price (Rs)" subLabel="This is the starting price for design and printing.">
                                 <TextInput type="number" value={tempProject.pricing?.designAndPrint?.basePrice || 0} onChange={e => setTempProject({...tempProject, pricing: { ...tempProject.pricing!, designAndPrint: { ...tempProject.pricing!.designAndPrint!, basePrice: parseFloat(e.target.value) || 0 } }})} />
                             </InputGroup>
                         </div>
@@ -189,7 +177,6 @@ export const ProjectManager: React.FC = () => {
         );
     }
 
-    // 8. Render View: List Mode
     return (
         <div className="max-w-5xl mx-auto pb-20">
             <SectionHeader 
@@ -203,7 +190,6 @@ export const ProjectManager: React.FC = () => {
                         className="flex flex-col md:flex-row gap-6 hover:border-blue-300 transition-colors group cursor-pointer relative" 
                         onClick={() => startEditProject(p)}
                     >
-                        {/* Visibility Overlay if hidden */}
                         {p.isVisible === false && (
                              <div className="absolute inset-0 bg-white/50 z-10 pointer-events-none rounded-lg" />
                         )}
@@ -219,14 +205,10 @@ export const ProjectManager: React.FC = () => {
                                 </div>
                                 <span className="text-xs font-bold px-2 py-1 bg-gray-100 rounded text-gray-600">{p.category}</span>
                             </div>
-                            {/* Actions - Wrapped in stopPropagation div to prevent Card click */}
                             <div className="mt-4 flex gap-3 items-center" onClick={(e) => e.stopPropagation()}>
                                 <Toggle checked={p.isVisible !== false} onChange={(val) => toggleVisibility(p.id, val)} />
                                 <div className="h-4 w-px bg-gray-300 mx-2" />
-                                {/* Edit Button */}
                                 <Button variant="secondary" onClick={() => startEditProject(p)} className="text-xs">Edit</Button>
-                                
-                                {/* Delete Button - Activated */}
                                 <Button 
                                     variant="danger" 
                                     onClick={() => handleDeleteClick(p.id)} 

@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { useRouter } from 'next/navigation';
 import { AdminDashboard } from '@/app/components/admin/AdminDashboard';
 import { ContentProvider } from '@/app/context/ContentContext';
+import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
   const router = useRouter();
@@ -11,7 +11,7 @@ export default function AdminPage() {
   const handleExit = () => {
     router.push('/');
   };
-
+  
   return (
     <ContentProvider>
         <div className="bg-gray-50">

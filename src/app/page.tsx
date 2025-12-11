@@ -1,13 +1,12 @@
-
 'use client';
 import React from 'react';
 import App from './App';
+import { ContentProvider } from './context/ContentContext';
 
-// Return a placeholder for server rendering, or null
 export default function Page() {
   return (
-      <React.StrictMode>
-        <App />
-      </React.StrictMode>
+    <ContentProvider>
+      <App />
+    </ContentProvider>
   );
 }
