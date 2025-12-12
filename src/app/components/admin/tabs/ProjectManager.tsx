@@ -91,6 +91,7 @@ export const ProjectManager: React.FC = () => {
         }
         
         setProjects(newProjects);
+        alert("Update Success!");
         setEditingProjectId(null);
     };
 
@@ -217,7 +218,7 @@ export const ProjectManager: React.FC = () => {
 
                         <div className="flex gap-4 pt-6 border-t border-gray-100">
                             <Button onClick={saveProject} variant="success" disabled={!isProjectDirty}>Save Project</Button>
-                            <Button onClick={() => startEditProject()} variant="secondary">Cancel</Button>
+                            <Button onClick={() => setEditingProjectId(null)} variant="secondary">Cancel</Button>
                         </div>
                     </div>
                 </Card>
