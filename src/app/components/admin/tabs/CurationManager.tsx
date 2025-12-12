@@ -3,6 +3,15 @@ import React, { useState } from 'react';
 import { useContent } from '../../../context/ContentContext';
 import { CuratedItem } from '../../../types';
 import { Card, SectionHeader, InputGroup, TextInput, TextArea, Button, FileUpload, LangTabs, confirmDelete, Toggle } from '../ui/AdminShared';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
+async function uploadFileToStorage(file: File, path: string): Promise<string> {
+    const storage = getStorage();
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(storageRef);
+    return downloadURL;
+}
 
 export const CurationManager: React.FC = () => {
     const { curatedItems, setCuratedItems, config, setConfig } = useContent();
@@ -11,9 +20,11 @@ export const CurationManager: React.FC = () => {
 
     const [editingItemId, setEditingItemId] = useState<number | null>(null);
     const [tempItem, setTempItem] = useState<Partial<CuratedItem>>({});
-    const [originalItem, setOriginalItem] = useState<Partial<CuratedItem>>({});
+    
+    // File states
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [videoFile, setVideoFile] = useState<File | null>(null);
 
-    const isItemDirty = JSON.stringify(tempItem) !== JSON.stringify(originalItem);
     const isCurationTextDirty = 
         localConfig.curationIntro !== config.curationIntro ||
         localConfig.curationIntro_si !== config.curationIntro_si ||
@@ -28,22 +39,37 @@ export const CurationManager: React.FC = () => {
         if (item) {
             setEditingItemId(item.id);
             setTempItem({ ...item });
-            setOriginalItem({ ...item });
         } else {
             setEditingItemId(-1);
-            const empty = { id: Date.now(), title: '', artist: '', image: '', video: '', isVisible: true };
-            setTempItem(empty);
-            setOriginalItem(empty);
+            setTempItem({ id: Date.now(), title: '', artist: '', image: '', video: '', isVisible: true });
         }
+        setImageFile(null);
+        setVideoFile(null);
     };
 
-    const saveItem = () => {
+    const saveItem = async () => {
         if (!tempItem.title) return alert("Title is required");
+        let updatedItem = { ...tempItem };
+
+        try {
+            if (imageFile) {
+                const path = `curation/${Date.now()}_${imageFile.name}`;
+                updatedItem.image = await uploadFileToStorage(imageFile, path);
+            }
+            if (videoFile) {
+                const path = `curation/${Date.now()}_${videoFile.name}`;
+                updatedItem.video = await uploadFileToStorage(videoFile, path);
+            }
+        } catch (error) {
+            alert("File upload failed.");
+            return;
+        }
+
         let newItems;
         if (editingItemId === -1) {
-            newItems = [...curatedItems, tempItem as CuratedItem];
+            newItems = [...curatedItems, updatedItem as CuratedItem];
         } else {
-            newItems = curatedItems.map(i => i.id === editingItemId ? tempItem as CuratedItem : i);
+            newItems = curatedItems.map(i => i.id === editingItemId ? updatedItem as CuratedItem : i);
         }
         setCuratedItems(newItems);
         setEditingItemId(null);
@@ -63,7 +89,7 @@ export const CurationManager: React.FC = () => {
 
     return (
         <div className="max-w-4xl mx-auto pb-20">
-                <Card className="mb-8 bg-blue-50 border-blue-100">
+            <Card className="mb-8 bg-blue-50 border-blue-100">
                 <SectionHeader title="Curation Page Text" />
                 <LangTabs active={configLang} onChange={setConfigLang} />
                 {configLang === 'en' && <InputGroup label="Intro Subheading (EN)"><TextArea value={localConfig.curationIntro} onChange={e => setLocalConfig({ ...localConfig, curationIntro: e.target.value })} rows={2} /></InputGroup>}
@@ -98,21 +124,21 @@ export const CurationManager: React.FC = () => {
                     </div>
                 </>
             ) : (
-                    <Card className="animate-in fade-in">
+                <Card className="animate-in fade-in">
                     <SectionHeader title={editingItemId === -1 ? "New Item" : "Edit Item"} />
                     <div className="space-y-6">
-                        <InputGroup label="Title"><TextInput value={tempItem.title} onChange={e => setTempItem({...tempItem, title: e.target.value})} /></InputGroup>
-                        <InputGroup label="Artist"><TextInput value={tempItem.artist} onChange={e => setTempItem({...tempItem, artist: e.target.value})} /></InputGroup>
+                        <InputGroup label="Title"><TextInput value={tempItem.title || ''} onChange={e => setTempItem({...tempItem, title: e.target.value})} /></InputGroup>
+                        <InputGroup label="Artist"><TextInput value={tempItem.artist || ''} onChange={e => setTempItem({...tempItem, artist: e.target.value})} /></InputGroup>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FileUpload label="Image" previewUrl={tempItem.image} onUpload={b64 => setTempItem({...tempItem, image: b64})} />
-                            <FileUpload label="Video (MP4)" accept="video/mp4" previewUrl={tempItem.video} onUpload={b64 => setTempItem({...tempItem, video: b64})} onClear={() => setTempItem({...tempItem, video: ''})} />
+                            <FileUpload label="Image" previewUrl={imageFile ? URL.createObjectURL(imageFile) : tempItem.image} onFileSelect={setImageFile} />
+                            <FileUpload label="Video (MP4)" accept="video/mp4" previewUrl={videoFile ? URL.createObjectURL(videoFile) : tempItem.video} onFileSelect={setVideoFile} onClear={() => setTempItem({...tempItem, video: ''})} />
                         </div>
                         <div className="flex gap-4 pt-4">
-                            <Button onClick={saveItem} variant="success" disabled={!isItemDirty}>Save Item</Button>
+                            <Button onClick={saveItem} variant="success">Save Item</Button>
                             <Button onClick={() => setEditingItemId(null)} variant="secondary">Cancel</Button>
                         </div>
                     </div>
-                    </Card>
+                </Card>
             )}
         </div>
     );

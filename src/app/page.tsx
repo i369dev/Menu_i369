@@ -2,11 +2,14 @@
 import React from 'react';
 import App from './App';
 import { ContentProvider } from './context/ContentContext';
+import { FirebaseProvider } from '@/firebase';
 
 export default function Page() {
   return (
-    <ContentProvider>
-      <App />
-    </ContentProvider>
+    <FirebaseProvider>
+      <ContentProvider>
+        <App />
+      </ContentProvider>
+    </FirebaseProvider>
   );
 }
