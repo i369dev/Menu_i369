@@ -1,17 +1,9 @@
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useContent } from '../../../context/ContentContext';
-import { CuratedItem } from '../../../types';
-import { Card, SectionHeader, InputGroup, TextInput, TextArea, Button, FileUpload, LangTabs, confirmDelete, Toggle } from '../ui/AdminShared';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-
-async function uploadFileToStorage(file: File, path: string): Promise<string> {
-    const storage = getStorage();
-    const storageRef = ref(storage, path);
-    await uploadBytes(storageRef, file);
-    const downloadURL = await getDownloadURL(storageRef);
-    return downloadURL;
-}
+import { CurationItem } from '../../../types';
+import { Card, SectionHeader, InputGroup, TextInput, Button, FileUpload, confirmDelete, SortableList, Toggle } from '../ui/AdminShared';
+import { uploadFileToStorage } from '../../../utils/storage';
 
 export const CurationManager: React.FC = () => {
     const { curatedItems, setCuratedItems, config, setConfig } = useContent();

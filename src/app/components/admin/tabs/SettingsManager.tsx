@@ -1,17 +1,9 @@
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useContent } from '../../../context/ContentContext';
-import { ContactEmail } from '../../../types';
-import { Card, SectionHeader, InputGroup, TextInput, Button, FileUpload, LangTabs, TextArea, confirmDelete } from '../ui/AdminShared';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-
-async function uploadFileToStorage(file: File, path: string): Promise<string> {
-    const storage = getStorage();
-    const storageRef = ref(storage, path);
-    await uploadBytes(storageRef, file);
-    const downloadURL = await getDownloadURL(storageRef);
-    return downloadURL;
-}
+import { GlobalConfig } from '../../../types';
+import { Card, SectionHeader, InputGroup, FileUpload, confirmDelete } from '../ui/AdminShared';
+import { uploadFileToStorage } from '../../../utils/storage';
 
 export const SettingsManager: React.FC = () => {
     const { config, setConfig } = useContent();

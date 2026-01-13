@@ -1,17 +1,8 @@
-
-import React, { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useContent } from '../../../context/ContentContext';
-import { Project, Partial } from '../../../types';
-import { Card, SectionHeader, InputGroup, TextInput, TextArea, Button, FileUpload, MultiFileUpload, LangTabs, confirmDelete, Toggle } from '../ui/AdminShared';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-
-async function uploadFileToStorage(file: File, path: string): Promise<string> {
-    const storage = getStorage();
-    const storageRef = ref(storage, path);
-    await uploadBytes(storageRef, file);
-    const downloadURL = await getDownloadURL(storageRef);
-    return downloadURL;
-}
+import { Project, ProjectMedia } from '../../../types';
+import { Card, SectionHeader, InputGroup, TextInput, Button, FileUpload, confirmDelete, SortableList, Toggle, Textarea } from '../ui/AdminShared';
+import { uploadFileToStorage } from '../../../utils/storage';
 
 export const ProjectManager: React.FC = () => {
     const { projects, setProjects } = useContent();
@@ -25,7 +16,6 @@ export const ProjectManager: React.FC = () => {
     const [mainImageFile, setMainImageFile] = useState<File | null>(null);
     const [videoFile, setVideoFile] = useState<File | null>(null);
     const [detailImageFiles, setDetailImageFiles] = useState<(File | string)[]>([]);
-
 
     const isProjectDirty = JSON.stringify(tempProject) !== JSON.stringify(originalProject) || mainImageFile !== null || videoFile !== null || detailImageFiles.some(f => f instanceof File);
 
@@ -54,6 +44,7 @@ export const ProjectManager: React.FC = () => {
     const saveProject = async () => {
         if (!tempProject.title) return alert("Title is required");
         let updatedProject = { ...tempProject };
+        const db = getFirestore(); // Firestore සම්බන්ධ කිරීම
 
         try {
             if (mainImageFile) {
@@ -76,10 +67,13 @@ export const ProjectManager: React.FC = () => {
             );
             updatedProject.detailImages = uploadedDetailImageUrls;
 
+            // දත්ත Database එකට Save කරන කොටස
+            const projectIdString = updatedProject.id ? updatedProject.id.toString() : Date.now().toString();
+            await setDoc(doc(db, "projects", projectIdString), updatedProject);
 
         } catch (error) {
-            console.error("Error uploading file:", error);
-            alert("File upload failed. Please try again.");
+            console.error("Error uploading file or saving to database:", error);
+            alert("Save failed! Please check console.");
             return;
         }
         
@@ -91,19 +85,36 @@ export const ProjectManager: React.FC = () => {
         }
         
         setProjects(newProjects);
-        alert("Update Success!");
+        alert("Saved Successfully!");
         setEditingProjectId(null);
     };
 
-    const handleDeleteClick = (id: number) => {
-        if (confirmDelete("Permanently delete this project? This action cannot be undone.")) {
-            setProjects(projects.filter(p => p.id !== id));
+    const handleDeleteClick = async (id: number) => {
+        if (confirmDelete("Permanently delete this project?")) {
+            try {
+                const db = getFirestore();
+                await deleteDoc(doc(db, "projects", id.toString()));
+                setProjects(projects.filter(p => p.id !== id));
+            } catch (error) {
+                console.error("Error deleting document:", error);
+                alert("Failed to delete project from database.");
+            }
         }
     };
 
-    const toggleVisibility = (id: number, visible: boolean) => {
+    const toggleVisibility = async (id: number, visible: boolean) => {
+        const db = getFirestore();
         const updated = projects.map(p => p.id === id ? { ...p, isVisible: visible } : p);
         setProjects(updated);
+        
+        try {
+            const projectToUpdate = projects.find(p => p.id === id);
+            if(projectToUpdate) {
+                 await setDoc(doc(db, "projects", id.toString()), { ...projectToUpdate, isVisible: visible }, { merge: true });
+            }
+        } catch (error) {
+            console.error("Error updating visibility:", error);
+        }
     };
 
     if (editingProjectId !== null) {
@@ -114,7 +125,7 @@ export const ProjectManager: React.FC = () => {
                     <div className="space-y-8">
                         {/* Universal Fields */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <InputGroup label="Project Title (English)" subLabel="Must be UPPERCASE. Excluded from translation.">
+                            <InputGroup label="Project Title (English)" subLabel="Must be UPPERCASE.">
                                 <TextInput value={tempProject.title || ''} onChange={e => setTempProject({...tempProject, title: e.target.value.toUpperCase()})} />
                             </InputGroup>
                             <InputGroup label="Category">
@@ -151,15 +162,15 @@ export const ProjectManager: React.FC = () => {
                         
                         {/* Pricing */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <InputGroup label="Design Only Price (Rs)" subLabel="Set the price for design-only services.">
+                            <InputGroup label="Design Only Price (Rs)">
                                 <TextInput type="number" value={tempProject.pricing?.designOnly || 0} onChange={e => setTempProject({...tempProject, pricing: { ...tempProject.pricing!, designOnly: parseFloat(e.target.value) || 0 }})} />
                             </InputGroup>
-                            <InputGroup label="Base Design & Print Price (Rs)" subLabel="This is the starting price for design and printing.">
+                            <InputGroup label="Base Design & Print Price (Rs)">
                                 <TextInput type="number" value={tempProject.pricing?.designAndPrint?.basePrice || 0} onChange={e => setTempProject({...tempProject, pricing: { ...tempProject.pricing!, designAndPrint: { ...tempProject.pricing!.designAndPrint!, basePrice: parseFloat(e.target.value) || 0 } }})} />
                             </InputGroup>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                            <InputGroup label="Included Cards (Min Qty)" subLabel="Baseline quantity included in base price">
+                            <InputGroup label="Included Cards (Min Qty)">
                                 <TextInput 
                                     type="number" 
                                     value={tempProject.pricing?.designAndPrint?.minQty || 10} 
@@ -175,7 +186,7 @@ export const ProjectManager: React.FC = () => {
                                     })} 
                                 />
                             </InputGroup>
-                            <InputGroup label="Incremental Unit Price" subLabel="Cost per additional card (Rs)">
+                            <InputGroup label="Incremental Unit Price">
                                 <TextInput 
                                     type="number" 
                                     value={tempProject.pricing?.designAndPrint?.unitPrice || 0} 

@@ -1,17 +1,9 @@
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useContent } from '../../../context/ContentContext';
 import { TrustedClient } from '../../../types';
 import { Card, SectionHeader, InputGroup, TextInput, Button, FileUpload, confirmDelete, Toggle } from '../ui/AdminShared';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-
-async function uploadFileToStorage(file: File, path: string): Promise<string> {
-    const storage = getStorage();
-    const storageRef = ref(storage, path);
-    await uploadBytes(storageRef, file);
-    const downloadURL = await getDownloadURL(storageRef);
-    return downloadURL;
-}
+import { uploadFileToStorage } from '../../../utils/storage';
 
 export const ClientManager: React.FC = () => {
     const { trustedClients, setTrustedClients } = useContent();
@@ -34,7 +26,8 @@ export const ClientManager: React.FC = () => {
 
     const saveClient = async () => {
         if (!tempClient.business_name) return alert("Business Name is required");
-        let updatedClient = { ...tempClient };
+        
+        let updatedClient: Partial<TrustedClient> = { ...tempClient };
         
         if (logoFile) {
             try {
@@ -46,7 +39,12 @@ export const ClientManager: React.FC = () => {
                 return;
             }
         }
-        
+
+        // Ensure logo_url is not undefined
+        if (updatedClient.logo_url === undefined) {
+            updatedClient.logo_url = '';
+        }
+
         let newClients;
         if (editingClientIndex === -1) {
             newClients = [...trustedClients, updatedClient as TrustedClient];
@@ -55,19 +53,19 @@ export const ClientManager: React.FC = () => {
         } else {
             return;
         }
-        setTrustedClients(newClients);
+        await setTrustedClients(newClients);
         setEditingClientIndex(null);
     };
 
-    const deleteClient = (index: number) => {
+    const deleteClient = async (index: number) => {
         if (confirmDelete("Remove client?")) {
-            setTrustedClients(trustedClients.filter((_, i) => i !== index));
+            await setTrustedClients(trustedClients.filter((_, i) => i !== index));
         }
     };
 
-    const toggleVisibility = (index: number, visible: boolean) => {
+    const toggleVisibility = async (index: number, visible: boolean) => {
         const newClients = trustedClients.map((client, i) => i === index ? { ...client, isVisible: visible } : client);
-        setTrustedClients(newClients);
+        await setTrustedClients(newClients);
     };
 
     return (
