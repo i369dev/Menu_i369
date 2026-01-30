@@ -1,8 +1,21 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useContent } from '../../../context/ContentContext';
-import { Project, ProjectMedia } from '../../../types';
-import { Card, SectionHeader, InputGroup, TextInput, Button, FileUpload, confirmDelete, SortableList, Toggle, Textarea } from '../ui/AdminShared';
+import { Project } from '../../../types';
+import { 
+    Card, 
+    SectionHeader, 
+    InputGroup, 
+    TextInput, 
+    Button, 
+    FileUpload, 
+    confirmDelete, 
+    Toggle, 
+    Textarea,
+    LangTabs,
+    MultiFileUpload
+} from '../ui/AdminShared';
 import { uploadFileToStorage } from '../../../utils/storage';
+import { getFirestore, doc, setDoc, deleteDoc } from 'firebase/firestore';
 
 export const ProjectManager: React.FC = () => {
     const { projects, setProjects } = useContent();
@@ -44,7 +57,7 @@ export const ProjectManager: React.FC = () => {
     const saveProject = async () => {
         if (!tempProject.title) return alert("Title is required");
         let updatedProject = { ...tempProject };
-        const db = getFirestore(); // Firestore සම්බන්ධ කිරීම
+        const db = getFirestore();
 
         try {
             if (mainImageFile) {
@@ -67,9 +80,8 @@ export const ProjectManager: React.FC = () => {
             );
             updatedProject.detailImages = uploadedDetailImageUrls;
 
-            // දත්ත Database එකට Save කරන කොටස
             const projectIdString = updatedProject.id ? updatedProject.id.toString() : Date.now().toString();
-            await setDoc(doc(db, "projects", projectIdString), updatedProject);
+            await setDoc(doc(db, "projects", projectIdString), updatedProject, { merge: true });
 
         } catch (error) {
             console.error("Error uploading file or saving to database:", error);
