@@ -10,12 +10,12 @@ import {
     FileUpload, 
     confirmDelete, 
     Toggle, 
-    Textarea,
+    TextArea,
     LangTabs,
     MultiFileUpload
 } from '../ui/AdminShared';
-import { uploadFileToStorage } from '../../../utils/storage';
 import { getFirestore, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { uploadFileToStorage } from '../../../utils/storage';
 
 export const ProjectManager: React.FC = () => {
     const { projects, setProjects } = useContent();
