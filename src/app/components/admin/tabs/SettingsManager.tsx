@@ -1,8 +1,8 @@
 
 import { useState } from 'react';
 import { useContent } from '../../../context/ContentContext';
-import { GlobalConfig } from '../../../types';
-import { Card, SectionHeader, InputGroup, FileUpload, confirmDelete } from '../ui/AdminShared';
+import { GlobalConfig, ContactEmail } from '../../../types';
+import { Card, SectionHeader, InputGroup, FileUpload, confirmDelete, Button, LangTabs, TextInput, TextArea } from '../ui/AdminShared';
 import { uploadFileToStorage } from '../../../utils/storage';
 
 export const SettingsManager: React.FC = () => {
@@ -232,3 +232,5 @@ export const SettingsManager: React.FC = () => {
         </div>
     );
 };
+
+    
