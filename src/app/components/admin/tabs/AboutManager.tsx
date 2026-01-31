@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useContent } from '../../../context/ContentContext';
 import { AboutConfig, TeamMember, SocialLink } from '../../../types';
-import { Card, SectionHeader, InputGroup, TextInput, Button, Textarea, FileUpload, confirmDelete, SortableList, Toggle } from '../ui/AdminShared';
+import { Card, SectionHeader, InputGroup, TextInput, Button, TextArea, FileUpload, confirmDelete, Toggle, LangTabs } from '../ui/AdminShared';
 import { uploadFileToStorage } from '../../../utils/storage';
 
 export const AboutManager: React.FC = () => {
