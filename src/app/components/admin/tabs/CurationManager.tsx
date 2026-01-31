@@ -1,8 +1,8 @@
 
 import { useState } from 'react';
 import { useContent } from '../../../context/ContentContext';
-import { CurationItem } from '../../../types';
-import { Card, SectionHeader, InputGroup, TextInput, Button, FileUpload, confirmDelete, SortableList, Toggle } from '../ui/AdminShared';
+import { CuratedItem } from '../../../types';
+import { Card, SectionHeader, InputGroup, TextInput, Button, FileUpload, confirmDelete, SortableList, Toggle, LangTabs, TextArea } from '../ui/AdminShared';
 import { uploadFileToStorage } from '../../../utils/storage';
 
 export const CurationManager: React.FC = () => {
