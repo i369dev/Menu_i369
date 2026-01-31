@@ -1,14 +1,12 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Project, CuratedItem, Order, SiteConfig, TrustedClient } from '../types';
 import { initialProjects, initialCuratedItems, initialConfig, initialClients } from '../utils/defaults';
 import { Language } from '../utils/translations';
-import { firestore } from '../../firebase';
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { firestore } from '@/firebase';
+import { doc, onSnapshot, setDoc, collection, writeBatch, deleteDoc } from "firebase/firestore";
 
 interface ContentContextType {
     projects: Project[];
-    setProjects: (projects: Project[]) => Promise<void>;
     deleteProject: (id: number) => Promise<void>;
     curatedItems: CuratedItem[];
     setCuratedItems: (items: CuratedItem[]) => Promise<void>;
@@ -29,27 +27,27 @@ interface ContentContextType {
 const ContentContext = createContext<ContentContextType | undefined>(undefined);
 
 export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [projects, setProjectsState] = useState<Project[]>(initialProjects);
+    const [projects, setProjectsState] = useState<Project[]>([]);
     const [curatedItems, setCuratedItemsState] = useState<CuratedItem[]>(initialCuratedItems);
     const [orders, setOrdersState] = useState<Order[]>([]);
     const [config, setConfigState] = useState<SiteConfig>(initialConfig);
     const [trustedClients, setTrustedClientsState] = useState<TrustedClient[]>(initialClients);
 
-    const contentDocRef = doc(firestore, "content", "main");
-
     useEffect(() => {
-        const unsubscribe = onSnapshot(contentDocRef, (doc) => {
+        const contentDocRef = doc(firestore, "content", "main");
+        const projectsColRef = collection(firestore, "projects");
+
+        // Listener for config, orders, etc. from the single doc
+        const unsubContent = onSnapshot(contentDocRef, (doc) => {
             if (doc.exists()) {
                 const data = doc.data();
-                setProjectsState(data.projects || initialProjects);
                 setCuratedItemsState(data.curatedItems || initialCuratedItems);
                 setOrdersState(data.orders || []);
                 setConfigState(data.config || initialConfig);
                 setTrustedClientsState(data.trustedClients || initialClients);
             } else {
-                // Initialize document if it doesn't exist
+                // Initialize non-project content if it doesn't exist
                 saveContent({
-                    projects: initialProjects,
                     curatedItems: initialCuratedItems,
                     orders: [],
                     config: initialConfig,
@@ -58,14 +56,38 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
             }
         });
 
-        return () => unsubscribe();
+        // Listener for projects collection
+        const unsubProjects = onSnapshot(projectsColRef, async (snapshot) => {
+            if (snapshot.empty && initialProjects.length > 0) {
+                console.log("Projects collection is empty. Seeding initial data...");
+                try {
+                    const batch = writeBatch(firestore);
+                    initialProjects.forEach(project => {
+                        const projectRef = doc(firestore, "projects", project.id.toString());
+                        batch.set(projectRef, project);
+                    });
+                    await batch.commit();
+                } catch (e) {
+                    console.error("Error seeding projects:", e);
+                }
+            } else {
+                const projectsData = snapshot.docs.map(doc => doc.data() as Project).sort((a, b) => a.id - b.id);
+                setProjectsState(projectsData);
+            }
+        });
+
+        return () => {
+            unsubContent();
+            unsubProjects();
+        };
     }, []);
 
     const saveContent = async (data: any) => {
+        const contentDocRef = doc(firestore, "content", "main");
         const cleanData = (obj: any): any => {
             if (obj === null || obj === undefined) return null;
             if (Array.isArray(obj)) return obj.map(item => cleanData(item));
-            if (typeof obj === 'object') {
+            if (typeof obj === 'object' && !(obj instanceof File)) {
                 const newObj: { [key: string]: any } = {};
                 for (const key in obj) {
                     if (obj[key] !== undefined) {
@@ -83,16 +105,9 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
             console.error("Error saving content: ", error);
         }
     };
-
-    const setProjects = async (p: Project[]) => {
-        setProjectsState(p);
-        await saveContent({ projects: p });
-    };
     
     const deleteProject = async (id: number) => {
-        const updatedProjects = projects.filter(p => p.id !== id);
-        setProjectsState(updatedProjects);
-        await saveContent({ projects: updatedProjects });
+        await deleteDoc(doc(firestore, "projects", id.toString()));
     };
 
     const setCuratedItems = async (i: CuratedItem[]) => {
@@ -167,7 +182,6 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return (
         <ContentContext.Provider value={{
             projects,
-            setProjects,
             deleteProject,
             curatedItems,
             setCuratedItems,

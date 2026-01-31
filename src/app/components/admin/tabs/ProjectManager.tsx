@@ -14,11 +14,12 @@ import {
     LangTabs,
     MultiFileUpload
 } from '../ui/AdminShared';
-import { getFirestore, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { firestore } from '@/firebase';
+import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import { uploadFileToStorage } from '../../../utils/storage';
 
 export const ProjectManager: React.FC = () => {
-    const { projects, setProjects } = useContent();
+    const { projects, deleteProject } = useContent();
 
     const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
     const [tempProject, setTempProject] = useState<Partial<Project>>({});
@@ -57,7 +58,6 @@ export const ProjectManager: React.FC = () => {
     const saveProject = async () => {
         if (!tempProject.title) return alert("Title is required");
         let updatedProject = { ...tempProject };
-        const db = getFirestore();
 
         try {
             if (mainImageFile) {
@@ -80,33 +80,24 @@ export const ProjectManager: React.FC = () => {
             );
             updatedProject.detailImages = uploadedDetailImageUrls;
 
-            const projectIdString = updatedProject.id ? updatedProject.id.toString() : Date.now().toString();
-            await setDoc(doc(db, "projects", projectIdString), updatedProject, { merge: true });
+            if (!updatedProject.id) {
+                updatedProject.id = Date.now();
+            }
+            const projectIdString = updatedProject.id.toString();
+            await setDoc(doc(firestore, "projects", projectIdString), updatedProject, { merge: true });
 
+            alert("Saved Successfully!");
+            setEditingProjectId(null);
         } catch (error) {
-            console.error("Error uploading file or saving to database:", error);
+            console.error("Error saving project:", error);
             alert("Save failed! Please check console.");
-            return;
         }
-        
-        let newProjects;
-        if (editingProjectId === -1) {
-            newProjects = [...projects, updatedProject as Project];
-        } else {
-            newProjects = projects.map(p => p.id === editingProjectId ? updatedProject as Project : p);
-        }
-        
-        setProjects(newProjects);
-        alert("Saved Successfully!");
-        setEditingProjectId(null);
     };
 
     const handleDeleteClick = async (id: number) => {
         if (confirmDelete("Permanently delete this project?")) {
             try {
-                const db = getFirestore();
-                await deleteDoc(doc(db, "projects", id.toString()));
-                setProjects(projects.filter(p => p.id !== id));
+                await deleteProject(id);
             } catch (error) {
                 console.error("Error deleting document:", error);
                 alert("Failed to delete project from database.");
@@ -115,15 +106,8 @@ export const ProjectManager: React.FC = () => {
     };
 
     const toggleVisibility = async (id: number, visible: boolean) => {
-        const db = getFirestore();
-        const updated = projects.map(p => p.id === id ? { ...p, isVisible: visible } : p);
-        setProjects(updated);
-        
         try {
-            const projectToUpdate = projects.find(p => p.id === id);
-            if(projectToUpdate) {
-                 await setDoc(doc(db, "projects", id.toString()), { ...projectToUpdate, isVisible: visible }, { merge: true });
-            }
+            await updateDoc(doc(firestore, "projects", id.toString()), { isVisible: visible });
         } catch (error) {
             console.error("Error updating visibility:", error);
         }
