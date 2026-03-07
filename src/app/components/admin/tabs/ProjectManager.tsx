@@ -42,9 +42,13 @@ export const ProjectManager: React.FC = () => {
             setDetailImageFiles(copy.detailImages || []);
         } else {
             setEditingProjectId(-1);
-            const empty = {
+            const empty: Partial<Project> = {
                 id: Date.now(),
-                title: '', subtitle: '', year: 'Rs. 0', location: 'ISLAND-WIDE', category: 'Menu Design', image: '', video: '', description: '', services: [], detailImages: [], themeColor: '#ffffff', textColor: '#000000', pricing: { designOnly: 0, designAndPrint: { minQty: 10, basePrice: 0, unitPrice: 0 } },
+                title: '', subtitle: '', year: 'Rs. 0', location: 'ISLAND-WIDE', category: 'Menu Design', image: '', video: '', description: '', 
+                services: [], 
+                services_si: [],
+                services_ta: [],
+                detailImages: [], themeColor: '#ffffff', textColor: '#000000', pricing: { designOnly: 0, designAndPrint: { minQty: 10, basePrice: 0, unitPrice: 0 } },
                 isVisible: true
             };
             setTempProject(empty);
@@ -93,6 +97,46 @@ export const ProjectManager: React.FC = () => {
             alert("Save failed! Please check console.");
         }
     };
+    
+    const handleSpecChange = (lang: 'en' | 'si' | 'ta', index: number, value: string) => {
+        setTempProject(prev => {
+            const newProject = { ...prev };
+            let key: 'services' | 'services_si' | 'services_ta' = 'services';
+            if (lang === 'si') key = 'services_si';
+            if (lang === 'ta') key = 'services_ta';
+            
+            const specs = [...(newProject[key] || [])];
+            specs[index] = value;
+            newProject[key] = specs;
+            return newProject;
+        });
+    };
+
+    const handleSpecDelete = (lang: 'en' | 'si' | 'ta', index: number) => {
+        setTempProject(prev => {
+            const newProject = { ...prev };
+            let key: 'services' | 'services_si' | 'services_ta' = 'services';
+            if (lang === 'si') key = 'services_si';
+            if (lang === 'ta') key = 'services_ta';
+            
+            const specs = (newProject[key] || []).filter((_, i) => i !== index);
+            newProject[key] = specs;
+            return newProject;
+        });
+    };
+
+    const handleSpecAdd = (lang: 'en' | 'si' | 'ta') => {
+        setTempProject(prev => {
+            const newProject = { ...prev };
+            let key: 'services' | 'services_si' | 'services_ta' = 'services';
+            if (lang === 'si') key = 'services_si';
+            if (lang === 'ta') key = 'services_ta';
+
+            const specs = [...(newProject[key] || []), '']; // Add an empty spec
+            newProject[key] = specs;
+            return newProject;
+        });
+    };
 
     const handleDeleteClick = async (id: number) => {
         if (confirmDelete("Permanently delete this project?")) {
@@ -138,18 +182,51 @@ export const ProjectManager: React.FC = () => {
                                 <div className="space-y-4 animate-in fade-in">
                                     <InputGroup label="Subtitle (English)"><TextInput value={tempProject.subtitle || ''} onChange={e => setTempProject({...tempProject, subtitle: e.target.value})} /></InputGroup>
                                     <InputGroup label="Description (English)"><TextArea value={tempProject.description || ''} onChange={e => setTempProject({...tempProject, description: e.target.value})} rows={4} /></InputGroup>
+                                    <InputGroup label="Specs (English)">
+                                        <div className="space-y-2">
+                                            {(tempProject.services || []).map((spec, index) => (
+                                                <div key={index} className="flex items-center gap-2">
+                                                    <TextInput value={spec} onChange={e => handleSpecChange('en', index, e.target.value)} />
+                                                    <Button variant="danger" className="px-3" onClick={() => handleSpecDelete('en', index)}>Del</Button>
+                                                </div>
+                                            ))}
+                                            <Button variant="secondary" onClick={() => handleSpecAdd('en')}>+ Add Spec</Button>
+                                        </div>
+                                    </InputGroup>
                                 </div>
                             )}
                             {projectLang === 'si' && (
                                 <div className="space-y-4 animate-in fade-in">
                                     <InputGroup label="Subtitle (Sinhala)"><TextInput value={tempProject.subtitle_si || ''} onChange={e => setTempProject({...tempProject, subtitle_si: e.target.value})} /></InputGroup>
                                     <InputGroup label="Description (Sinhala)"><TextArea value={tempProject.description_si || ''} onChange={e => setTempProject({...tempProject, description_si: e.target.value})} rows={4} /></InputGroup>
+                                    <InputGroup label="Specs (Sinhala)">
+                                        <div className="space-y-2">
+                                            {(tempProject.services_si || []).map((spec, index) => (
+                                                <div key={index} className="flex items-center gap-2">
+                                                    <TextInput value={spec} onChange={e => handleSpecChange('si', index, e.target.value)} />
+                                                    <Button variant="danger" className="px-3" onClick={() => handleSpecDelete('si', index)}>Del</Button>
+                                                </div>
+                                            ))}
+                                            <Button variant="secondary" onClick={() => handleSpecAdd('si')}>+ Add Spec</Button>
+                                        </div>
+                                    </InputGroup>
                                 </div>
                             )}
                             {projectLang === 'ta' && (
                                 <div className="space-y-4 animate-in fade-in">
                                     <InputGroup label="Subtitle (Tamil)"><TextInput value={tempProject.subtitle_ta || ''} onChange={e => setTempProject({...tempProject, subtitle_ta: e.target.value})} /></InputGroup>
                                     <InputGroup label="Description (Tamil)"><TextArea value={tempProject.description_ta || ''} onChange={e => setTempProject({...tempProject, description_ta: e.target.value})} rows={4} /></InputGroup>
+                                    <InputGroup label="Specs (Tamil)">
+                                        <div className="space-y-2">
+                                            {(tempProject.services_ta || []).map((spec, index) => (
+                                                <div key={index} className="flex items-center gap-2">
+                                                    <TextInput value={spec} onChange={e => handleSpecChange('ta', index, e.target.value)} />
+                                                    <Button variant="danger" className="px-3" onClick={() => handleSpecDelete('ta', index)}>Del</Button>
+                                                </div>
+                                            ))}
+                                            <Button variant="secondary" onClick={() => handleSpecAdd('ta')}>+ Add Spec</Button>
+                                        </div>
+                                    </InputGroup>
                                 </div>
                             )}
                         </div>
