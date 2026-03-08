@@ -36,9 +36,10 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({ details, pro
     };
 
     const total = calculateTotal();
-
-    const Page: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-        <div className="bg-white w-[210mm] min-h-[297mm] shadow-lg mx-auto mb-8 p-12 font-sans text-xs text-gray-800">
+    
+    // This Page component is now defined with a fixed height and `overflow-hidden` to enforce the A4 dimensions.
+    const Page: React.FC<{ children: React.ReactNode, isLast?: boolean }> = ({ children, isLast }) => (
+        <div className={`bg-white w-[210mm] h-[297mm] shadow-lg mx-auto font-sans text-xs text-gray-800 p-12 box-border overflow-hidden relative ${isLast ? '' : 'mb-8'}`}>
             {children}
         </div>
     );
@@ -48,113 +49,122 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({ details, pro
             <style jsx global>{`
                 @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
                 .font-times { font-family: 'Times New Roman', Times, serif; }
+                .clearfix::after {
+                    content: "";
+                    clear: both;
+                    display: table;
+                }
             `}</style>
             <Page>
-                <header className="flex justify-between items-start pb-8">
-                    <div>
-                        <img src={config.logoDark} alt="Logo" className="w-32 mb-4" />
-                        <div className="font-bold">Imaginative369</div>
-                        <div>BADULLA Uva Province 90000</div>
-                        <div>SriLanka</div>
-                        <div>{config.whatsappNumber}</div>
-                        <div>{config.contactEmail}</div>
-                        <div>www.imaginative369.com</div>
-                    </div>
-                    <div className="text-right">
-                        <h1 className="text-4xl font-bold font-times mb-1 text-gray-900">QUOTE</h1>
-                        <div className="font-mono text-gray-600">{quoteId}</div>
-                    </div>
-                </header>
-                
-                <section className="flex justify-between items-start pb-8">
-                    <div>
-                        <div className="font-bold text-gray-500 mb-1">Bill To</div>
-                        <div className="font-bold text-base">{details.name}</div>
-                        <div className="whitespace-pre-line">{details.address}</div>
-                    </div>
-                    <div className="text-right grid grid-cols-2 gap-x-4 gap-y-1">
-                        <span className="font-bold"></span><div></div>
-                        <span className="font-bold">Expiry Date :</span><span>{format(expiryDate, 'dd MMM yyyy')}</span>
-                    </div>
-                </section>
-
-                <section className="pb-8">
-                    <div className="font-bold text-gray-500 mb-1">Subject</div>
-                    <p>Menu Design, Printing & Delivery Service - {details.business} - {details.quantity} {project?.title} menu cards</p>
-                </section>
-
-                <table className="w-full border-collapse">
-                    <thead>
-                        <tr className="bg-gray-800 text-white">
-                            <th className="p-2 text-left w-8">#</th>
-                            <th className="p-2 text-left">Item & Description</th>
-                            <th className="p-2 text-right w-16">Qty</th>
-                            <th className="p-2 text-right w-24">Rate</th>
-                            <th className="p-2 text-right w-24">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr className="border-b">
-                            <td className="p-2 align-top">1</td>
-                            <td className="p-2">
-                                <div className="font-bold">A3 Trifold Menu Design (Both Sides)</div>
-                                <ul className="list-disc pl-5 text-gray-600">
-                                    <li>50+ items</li>
-                                    <li>User Generate Images or Stock Images</li>
-                                    <li>Design Delivery: 1 - 2 Days</li>
-                                    <li>Unlimited Revisions</li>
-                                </ul>
-                            </td>
-                            <td className="p-2 text-right align-top">1.00</td>
-                            <td className="p-2 text-right align-top">{total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                            <td className="p-2 text-right align-top">{total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        </tr>
-                         <tr className="border-b">
-                            <td className="p-2 align-top"></td>
-                            <td className="p-2">
-                                <div className="font-bold">A3 Trifold Menu Print</div>
-                                <ul className="list-disc pl-5 text-gray-600">
-                                    <li>{details.quantity} Printed Menu Cards</li>
-                                    <li>Matte Laminated</li>
-                                    <li>Ivory Board</li>
-                                </ul>
-                            </td>
-                            <td className="p-2 text-right align-top"></td>
-                            <td className="p-2 text-right align-top"></td>
-                            <td className="p-2 text-right align-top"></td>
-                        </tr>
-                         <tr className="border-b">
-                            <td className="p-2 align-top"></td>
-                            <td className="p-2 font-bold">FREE DELIVERY</td>
-                            <td className="p-2"></td>
-                            <td className="p-2"></td>
-                            <td className="p-2"></td>
-                        </tr>
-                    </tbody>
-                </table>
-                
-                <div className="flex justify-end mt-8">
-                    <div className="w-1/2">
-                        <div className="flex justify-between p-2">
-                            <span>Sub Total</span>
-                            <span>{total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <div className="h-full flex flex-col">
+                    <div className="clearfix pb-8">
+                        <div className="float-left w-1/2">
+                            <img src={config.logoDark} alt="Logo" className="w-32 mb-4" />
+                            <div className="font-bold">Imaginative369</div>
+                            <div>BADULLA Uva Province 90000</div>
+                            <div>SriLanka</div>
+                            <div>{config.whatsappNumber}</div>
+                            <div>{config.contactEmail}</div>
+                            <div>www.imaginative369.com</div>
                         </div>
-                        <div className="flex justify-between p-2 bg-gray-100 font-bold text-base">
-                            <span>Total</span>
-                            <span>LKR {total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <div className="float-right w-1/2 text-right">
+                            <h1 className="text-4xl font-bold font-times mb-1 text-gray-900">QUOTE</h1>
+                            <div className="font-mono text-gray-600">{quoteId}</div>
+                        </div>
+                    </div>
+                    
+                    <div className="clearfix pb-8">
+                        <div className="float-left w-1/2">
+                            <div className="font-bold text-gray-500 mb-1">Bill To</div>
+                            <div className="font-bold text-base">{details.name}</div>
+                            <div className="whitespace-pre-line">{details.address}</div>
+                        </div>
+                        <div className="float-right w-1/2 text-right">
+                            <div className="inline-grid grid-cols-[auto,auto] gap-x-4 gap-y-1">
+                                <span className="font-bold text-right">Expiry Date :</span><span>{format(expiryDate, 'dd MMM yyyy')}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="pb-8">
+                        <div className="font-bold text-gray-500 mb-1">Subject</div>
+                        <p>Menu Design, Printing & Delivery Service - {details.business} - {details.quantity} {project?.title} menu cards</p>
+                    </div>
+
+                    <table className="w-full border-collapse">
+                        <thead>
+                            <tr className="bg-gray-800 text-white">
+                                <th className="p-2 text-left w-8">#</th>
+                                <th className="p-2 text-left">Item & Description</th>
+                                <th className="p-2 text-right w-16">Qty</th>
+                                <th className="p-2 text-right w-24">Rate</th>
+                                <th className="p-2 text-right w-24">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr className="border-b">
+                                <td className="p-2 align-top">1</td>
+                                <td className="p-2">
+                                    <div className="font-bold">A3 Trifold Menu Design (Both Sides)</div>
+                                    <ul className="list-disc pl-5 text-gray-600">
+                                        <li>50+ items</li>
+                                        <li>User Generate Images or Stock Images</li>
+                                        <li>Design Delivery: 1 - 2 Days</li>
+                                        <li>Unlimited Revisions</li>
+                                    </ul>
+                                </td>
+                                <td className="p-2 text-right align-top">1.00</td>
+                                <td className="p-2 text-right align-top">{total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td className="p-2 text-right align-top">{total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                            </tr>
+                             <tr className="border-b">
+                                <td className="p-2 align-top"></td>
+                                <td className="p-2">
+                                    <div className="font-bold">A3 Trifold Menu Print</div>
+                                    <ul className="list-disc pl-5 text-gray-600">
+                                        <li>{details.quantity} Printed Menu Cards</li>
+                                        <li>Matte Laminated</li>
+                                        <li>Ivory Board</li>
+                                    </ul>
+                                </td>
+                                <td className="p-2 text-right align-top"></td>
+                                <td className="p-2 text-right align-top"></td>
+                                <td className="p-2 text-right align-top"></td>
+                            </tr>
+                             <tr className="border-b">
+                                <td className="p-2 align-top"></td>
+                                <td className="p-2 font-bold">FREE DELIVERY</td>
+                                <td className="p-2"></td>
+                                <td className="p-2"></td>
+                                <td className="p-2"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div className="mt-auto pt-8">
+                        <div className="clearfix">
+                             <div className="float-right w-1/2">
+                                <div className="flex justify-between p-2">
+                                    <span>Sub Total</span>
+                                    <span>{total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                </div>
+                                <div className="flex justify-between p-2 bg-gray-100 font-bold text-base">
+                                    <span>Total</span>
+                                    <span>LKR {total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-8">
+                            <div className="font-bold mb-2">Notes</div>
+                            <p className="whitespace-pre-line text-gray-600">{details.note}</p>
                         </div>
                     </div>
                 </div>
-
-                <div className="mt-12">
-                    <div className="font-bold mb-2">Notes</div>
-                    <p className="whitespace-pre-line text-gray-600">{details.note}</p>
-                </div>
-                
                 <div className="absolute bottom-4 right-12 text-gray-400 text-xs">1</div>
             </Page>
 
-            <Page>
+            <Page isLast={true}>
                 <div className="font-bold mb-4">Terms & Conditions</div>
                 <div className="space-y-4 text-gray-600 text-justify">
                     <p><span className="font-bold">A 50% advance is required</span> to begin the project, with the remaining 50% payable before final delivery. For printed materials, full payment is required before dispatch and any relevant materials from you.</p>
@@ -170,6 +180,7 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({ details, pro
                     <p><span className="font-bold">Cancellation Policy:</span> The advance payment is non-refundable if the client cancels after work begins.</p>
                     <p><span className="font-bold">Confidentiality:</span> All client-provided materials and information will be treated as confidential.</p>
                 </div>
+                <div className="absolute bottom-4 right-12 text-gray-400 text-xs">2</div>
             </Page>
         </div>
     );
