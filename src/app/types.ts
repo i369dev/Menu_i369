@@ -149,6 +149,14 @@ export interface SiteConfig {
   pp_contactText_si?: string;
   pp_contactText_ta?: string;
 
+  // Quotation Template
+  quotationHeader: string;
+  quotationHeader_si?: string;
+  quotationHeader_ta?: string;
+  quotationTerms: string;
+  quotationTerms_si?: string;
+  quotationTerms_ta?: string;
+
   // Team
   teamMembers: TeamMember[];
 }

@@ -10,12 +10,13 @@ import { SettingsManager } from './tabs/SettingsManager';
 import { OrderManager } from './tabs/OrderManager';
 import { AnalyticsManager } from './tabs/AnalyticsManager';
 import { QuotationManager } from './tabs/QuotationManager';
+import { QuotationTemplateManager } from './tabs/QuotationTemplateManager';
 
 interface AdminDashboardProps {
     onExit: () => void;
 }
 
-const Tabs = ['Analytics', 'Projects', 'Quotation', 'Curation', 'About', 'Trusted By', 'Settings', 'Orders'] as const;
+const Tabs = ['Analytics', 'Projects', 'Quote Generator', 'Quote Template', 'Curation', 'About', 'Trusted By', 'Settings', 'Orders'] as const;
 type Tab = typeof Tabs[number];
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit }) => {
@@ -49,7 +50,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit }) => {
             <main className="flex-1 p-6 md:p-12 overflow-y-auto h-screen scroll-smooth bg-gray-50 relative">
                 {activeTab === 'Analytics' && <AnalyticsManager />}
                 {activeTab === 'Projects' && <ProjectManager />}
-                {activeTab === 'Quotation' && <QuotationManager />}
+                {activeTab === 'Quote Generator' && <QuotationManager />}
+                {activeTab === 'Quote Template' && <QuotationTemplateManager />}
                 {activeTab === 'Curation' && <CurationManager />}
                 {activeTab === 'About' && <AboutManager />}
                 {activeTab === 'Trusted By' && <ClientManager />}

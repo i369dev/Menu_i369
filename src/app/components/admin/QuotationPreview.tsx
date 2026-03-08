@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Project } from '../../types';
+import { Project, SiteConfig } from '../../types';
 import { useContent } from '../../context/ContentContext';
 import { format } from 'date-fns';
 
@@ -21,6 +21,16 @@ interface QuotationPreviewProps {
 export const QuotationPreview: React.FC<QuotationPreviewProps> = ({ details, project, quoteId }) => {
     const { config } = useContent();
 
+    const interpolate = (template: string) => {
+        if (!template) return '';
+        return template
+            .replace(/{{whatsappNumber}}/g, config.whatsappNumber || '')
+            .replace(/{{contactEmail}}/g, config.contactEmail || '');
+    };
+
+    const headerHtml = interpolate(config.quotationHeader || '');
+    const termsHtml = interpolate(config.quotationTerms || '');
+
     const issueDate = new Date();
     const expiryDate = new Date();
     expiryDate.setDate(issueDate.getDate() + 7);
@@ -37,7 +47,6 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({ details, pro
 
     const total = calculateTotal();
     
-    // This Page component is now defined with a fixed height and `overflow-hidden` to enforce the A4 dimensions.
     const Page: React.FC<{ children: React.ReactNode, isLast?: boolean }> = ({ children, isLast }) => (
         <div className={`a4-page-container bg-white w-[210mm] h-[297mm] shadow-lg mx-auto font-sans text-xs text-gray-800 p-12 box-border overflow-hidden relative ${isLast ? '' : 'mb-8'}`}>
             {children}
@@ -60,12 +69,7 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({ details, pro
                     <div className="clearfix pb-8">
                         <div className="float-left w-1/2">
                             <img src={config.logoDark} alt="Logo" className="w-32 mb-4" />
-                            <div className="font-bold">Imaginative369</div>
-                            <div>BADULLA Uva Province 90000</div>
-                            <div>SriLanka</div>
-                            <div>{config.whatsappNumber}</div>
-                            <div>{config.contactEmail}</div>
-                            <div>www.imaginative369.com</div>
+                            <div dangerouslySetInnerHTML={{ __html: headerHtml }} />
                         </div>
                         <div className="float-right w-1/2 text-right">
                             <h1 className="text-4xl font-bold font-times mb-1 text-gray-900">QUOTE</h1>
@@ -166,20 +170,7 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({ details, pro
 
             <Page isLast={true}>
                 <div className="font-bold mb-4">Terms & Conditions</div>
-                <div className="space-y-4 text-gray-600 text-justify">
-                    <p><span className="font-bold">A 50% advance is required</span> to begin the project, with the remaining 50% payable before final delivery. For printed materials, full payment is required before dispatch and any relevant materials from you.</p>
-                    <p>
-                        Payments can be made via bank transfer to the following account:<br />
-                        <span className="font-bold">D M M B N BANDARA</span><br />
-                        <span className="font-bold">105910004367</span><br />
-                        <span className="font-bold">Pan Asia Bank</span>
-                    </p>
-                    <p><span className="font-bold">Project Timelines:</span> The completed designs will be delivered in agreed formats within 7 days after approval. Expedited delivery is available upon request.</p>
-                    <p><span className="font-bold">Revisions:</span> Unlimited revisions are included until the final approval.</p>
-                    <p><span className="font-bold">Ownership Rights:</span> Upon full payment, the client gains full usage rights to the designs. Imaginative369 retains the right to showcase the work in its portfolio.</p>
-                    <p><span className="font-bold">Cancellation Policy:</span> The advance payment is non-refundable if the client cancels after work begins.</p>
-                    <p><span className="font-bold">Confidentiality:</span> All client-provided materials and information will be treated as confidential.</p>
-                </div>
+                <div className="space-y-4 text-gray-600 text-justify" dangerouslySetInnerHTML={{ __html: termsHtml }} />
                 <div className="absolute bottom-4 right-12 text-gray-400 text-xs">2</div>
             </Page>
         </div>

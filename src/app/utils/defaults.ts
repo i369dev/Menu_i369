@@ -29,6 +29,31 @@ export const initialCuratedItems: CuratedItem[] = [
   { id: 7, title: "Cinematic Pour", artist: "Detail", video: "https://videos.pexels.com/video-files/4114797/4114797-uhd_2560_1440_25fps.mp4", isVisible: true }
 ];
 
+const defaultQuotationHeader = `
+    <div class="font-bold">Imaginative369</div>
+    <div>BADULLA Uva Province 90000</div>
+    <div>SriLanka</div>
+    <div>{{whatsappNumber}}</div>
+    <div>{{contactEmail}}</div>
+    <div>www.imaginative369.com</div>
+`;
+
+const defaultQuotationTerms = `
+    <p><span class="font-bold">A 50% advance is required</span> to begin the project, with the remaining 50% payable before final delivery. For printed materials, full payment is required before dispatch and any relevant materials from you.</p>
+    <p>
+        Payments can be made via bank transfer to the following account:<br />
+        <span class="font-bold">D M M B N BANDARA</span><br />
+        <span class="font-bold">105910004367</span><br />
+        <span class="font-bold">Pan Asia Bank</span>
+    </p>
+    <p><span class="font-bold">Project Timelines:</span> The completed designs will be delivered in agreed formats within 7 days after approval. Expedited delivery is available upon request.</p>
+    <p><span class="font-bold">Revisions:</span> Unlimited revisions are included until the final approval.</p>
+    <p><span class="font-bold">Ownership Rights:</span> Upon full payment, the client gains full usage rights to the designs. Imaginative369 retains the right to showcase the work in its portfolio.</p>
+    <p><span class="font-bold">Cancellation Policy:</span> The advance payment is non-refundable if the client cancels after work begins.</p>
+    <p><span class="font-bold">Confidentiality:</span> All client-provided materials and information will be treated as confidential.</p>
+`;
+
+
 export const initialConfig: SiteConfig = {
     unitPriceIncrease: 0,
     logoLight: "https://i.ibb.co/3Wfjm2c/i369-logo.png",
@@ -89,6 +114,14 @@ export const initialConfig: SiteConfig = {
     pp_contactText: translations.en.privacyPolicy.contactText,
     pp_contactText_si: translations.si.privacyPolicy.contactText,
     pp_contactText_ta: translations.ta.privacyPolicy.contactText,
+
+    // Quotation Template Defaults
+    quotationHeader: defaultQuotationHeader,
+    quotationHeader_si: defaultQuotationHeader, // Placeholder, should be translated
+    quotationHeader_ta: defaultQuotationHeader, // Placeholder, should be translated
+    quotationTerms: defaultQuotationTerms,
+    quotationTerms_si: defaultQuotationTerms, // Placeholder, should be translated
+    quotationTerms_ta: defaultQuotationTerms, // Placeholder, should be translated
 
     socialLinks: [
       { id: 1, platform: "Facebook", url: "#", icon: "https://cdn-icons-png.flaticon.com/512/733/733547.png", isVisible: true },
