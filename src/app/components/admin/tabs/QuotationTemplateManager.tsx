@@ -45,7 +45,7 @@ export const QuotationTemplateManager: React.FC = () => {
                 <SectionHeader title="Quotation Template Editor" />
                  <p className="text-xs text-gray-500 mb-6 -mt-4">
                     Edit the header and footer content for your quotations. You can use HTML for formatting.
-                    Use placeholders like `{{whatsappNumber}}` and `{{contactEmail}}` which will be replaced with values from Company Settings.
+                    Use placeholders like <code>{'{{whatsappNumber}}'}</code> and <code>{'{{contactEmail}}'}</code> which will be replaced with values from Company Settings.
                 </p>
 
                 <LangTabs active={lang} onChange={setLang} />
