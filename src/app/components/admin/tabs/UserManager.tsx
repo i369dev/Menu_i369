@@ -8,7 +8,7 @@ import { firestore, auth } from '@/firebase';
 import { AppUser } from '@/app/types';
 import { Card, SectionHeader, InputGroup, TextInput, Button, confirmDelete } from '../ui/AdminShared';
 
-const ALL_PERMISSIONS = ['Projects', 'Quote Generator', 'Quote Template', 'Curation', 'About', 'Trusted By', 'Settings', 'Orders'] as const;
+const ALL_PERMISSIONS = ['Analytics', 'Projects', 'Quote Generator', 'Quote Template', 'Curation', 'About', 'Trusted By', 'Settings', 'Users & Roles', 'Orders'] as const;
 
 export const UserManager: React.FC = () => {
     const [users, setUsers] = useState<AppUser[]>([]);

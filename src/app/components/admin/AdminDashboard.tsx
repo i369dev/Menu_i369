@@ -31,8 +31,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit }) => {
         if (appUser.role === 'Super Admin') {
             return ALL_TABS;
         }
-        // Always show Analytics, and then filter by permissions
-        return ALL_TABS.filter(tab => appUser.permissions?.includes(tab) || tab === 'Analytics');
+        // Filter by permissions
+        return ALL_TABS.filter(tab => appUser.permissions?.includes(tab));
     }, [appUser]);
 
     useEffect(() => {
