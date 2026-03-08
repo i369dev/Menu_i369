@@ -1,22 +1,27 @@
 
 import React, { useState } from 'react';
 import { TextInput, Button } from './ui/AdminShared';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/firebase';
 
 interface LoginViewProps {
-    onLogin: () => void;
     onExit: () => void;
 }
 
-export const LoginView: React.FC<LoginViewProps> = ({ onLogin, onExit }) => {
+export const LoginView: React.FC<LoginViewProps> = ({ onExit }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState<string | null>(null);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (email === 'menu@i369.com' && password === 'menu@123') {
-            onLogin();
-        } else {
-            alert('Invalid Credentials');
+        setError(null);
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            // The AuthProvider will handle redirecting to the dashboard
+        } catch (err: any) {
+            setError('Invalid credentials. Please try again.');
+            console.error(err);
         }
     };
 
@@ -38,6 +43,9 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, onExit }) => {
                     <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide">Password</label>
                     <TextInput type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
                 </div>
+                
+                {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+
                 <div className="space-y-4 pt-4">
                     <Button type="submit" className="w-full py-3 shadow-lg">Sign In</Button>
                     <button type="button" onClick={onExit} className="w-full text-center text-xs text-gray-500 hover:text-gray-800 uppercase tracking-widest font-bold">

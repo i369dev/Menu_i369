@@ -160,3 +160,10 @@ export interface SiteConfig {
   // Team
   teamMembers: TeamMember[];
 }
+
+export interface AppUser {
+  uid: string;
+  email: string;
+  role: 'Super Admin' | 'Editor' | 'Sales';
+  permissions: string[];
+}
