@@ -36,47 +36,43 @@ export const QuotationManager: React.FC = () => {
         setDetails(prev => ({ ...prev, [field]: value }));
     };
     
-    const handleDownloadPdf = () => {
-        const input = previewRef.current;
-        if (!input) {
-            alert("Preview element not found.");
+    const handleDownloadPdf = async () => {
+        const previewContainer = previewRef.current;
+        if (!previewContainer) {
+          alert("Preview element not found.");
+          return;
+        }
+
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageElements = previewContainer.querySelectorAll<HTMLDivElement>('.a4-page-container');
+        
+        if (pageElements.length === 0) {
+            alert("No printable pages found in the preview.");
             return;
         }
 
-        // Temporarily make scrollbar invisible
-        input.style.setProperty('--scrollbar-bg', 'transparent');
-
-        html2canvas(input, {
-            scale: 2, // Higher scale for better resolution
+        for (let i = 0; i < pageElements.length; i++) {
+          const page = pageElements[i];
+          if (i > 0) {
+            pdf.addPage();
+          }
+          
+          const canvas = await html2canvas(page, {
+            scale: 3, // Increase scale for higher resolution output
             useCORS: true,
-            scrollY: -window.scrollY,
-            windowWidth: input.scrollWidth,
-            windowHeight: input.scrollHeight
-        }).then(canvas => {
-            // Restore scrollbar
-            input.style.removeProperty('--scrollbar-bg');
-            
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            
-            const canvasWidth = canvas.width;
-            const canvasHeight = canvas.height;
-            
-            const ratio = canvasWidth / pdfWidth;
-            const imgHeight = canvasHeight / ratio;
-            
-            const totalPages = Math.ceil(imgHeight / pdfHeight);
+            logging: false, // Disables logging for cleaner console
+            width: page.offsetWidth,
+            height: page.offsetHeight,
+          });
 
-            for (let i = 0; i < totalPages; i++) {
-                if (i > 0) pdf.addPage();
-                const yPosition = - (i * pdfHeight);
-                pdf.addImage(imgData, 'PNG', 0, yPosition, pdfWidth, imgHeight);
-            }
-            
-            pdf.save(`Quotation-${quoteId}.pdf`);
-        });
+          const imgData = canvas.toDataURL('image/png');
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = pdf.internal.pageSize.getHeight();
+          
+          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        }
+        
+        pdf.save(`Quotation-${quoteId}.pdf`);
     };
 
     return (

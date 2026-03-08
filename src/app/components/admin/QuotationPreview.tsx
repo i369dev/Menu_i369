@@ -39,7 +39,7 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({ details, pro
     
     // This Page component is now defined with a fixed height and `overflow-hidden` to enforce the A4 dimensions.
     const Page: React.FC<{ children: React.ReactNode, isLast?: boolean }> = ({ children, isLast }) => (
-        <div className={`bg-white w-[210mm] h-[297mm] shadow-lg mx-auto font-sans text-xs text-gray-800 p-12 box-border overflow-hidden relative ${isLast ? '' : 'mb-8'}`}>
+        <div className={`a4-page-container bg-white w-[210mm] h-[297mm] shadow-lg mx-auto font-sans text-xs text-gray-800 p-12 box-border overflow-hidden relative ${isLast ? '' : 'mb-8'}`}>
             {children}
         </div>
     );
