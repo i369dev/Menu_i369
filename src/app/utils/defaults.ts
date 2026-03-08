@@ -30,7 +30,7 @@ export const initialCuratedItems: CuratedItem[] = [
 ];
 
 const defaultQuotationHeader = `
-    <div class="font-bold">Imaginative369</div>
+    <div style="font-weight: bold;">Imaginative369</div>
     <div>BADULLA Uva Province 90000</div>
     <div>SriLanka</div>
     <div>{{whatsappNumber}}</div>
@@ -39,18 +39,18 @@ const defaultQuotationHeader = `
 `;
 
 const defaultQuotationTerms = `
-    <p><span class="font-bold">A 50% advance is required</span> to begin the project, with the remaining 50% payable before final delivery. For printed materials, full payment is required before dispatch and any relevant materials from you.</p>
+    <p><strong>A 50% advance is required</strong> to begin the project, with the remaining 50% payable before final delivery. For printed materials, full payment is required before dispatch and any relevant materials from you.</p>
     <p>
         Payments can be made via bank transfer to the following account:<br />
-        <span class="font-bold">D M M B N BANDARA</span><br />
-        <span class="font-bold">105910004367</span><br />
-        <span class="font-bold">Pan Asia Bank</span>
+        <strong>D M M B N BANDARA</strong><br />
+        <strong>105910004367</strong><br />
+        <strong>Pan Asia Bank</strong>
     </p>
-    <p><span class="font-bold">Project Timelines:</span> The completed designs will be delivered in agreed formats within 7 days after approval. Expedited delivery is available upon request.</p>
-    <p><span class="font-bold">Revisions:</span> Unlimited revisions are included until the final approval.</p>
-    <p><span class="font-bold">Ownership Rights:</span> Upon full payment, the client gains full usage rights to the designs. Imaginative369 retains the right to showcase the work in its portfolio.</p>
-    <p><span class="font-bold">Cancellation Policy:</span> The advance payment is non-refundable if the client cancels after work begins.</p>
-    <p><span class="font-bold">Confidentiality:</span> All client-provided materials and information will be treated as confidential.</p>
+    <p><strong>Project Timelines:</strong> The completed designs will be delivered in agreed formats within 7 days after approval. Expedited delivery is available upon request.</p>
+    <p><strong>Revisions:</strong> Unlimited revisions are included until the final approval.</p>
+    <p><strong>Ownership Rights:</strong> Upon full payment, the client gains full usage rights to the designs. Imaginative369 retains the right to showcase the work in its portfolio.</p>
+    <p><strong>Cancellation Policy:</strong> The advance payment is non-refundable if the client cancels after work begins.</p>
+    <p><strong>Confidentiality:</strong> All client-provided materials and information will be treated as confidential.</p>
 `;
 
 
