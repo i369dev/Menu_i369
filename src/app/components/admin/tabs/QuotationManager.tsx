@@ -16,7 +16,7 @@ const getPriceForQuantity = (rate: PrintRate, quantity: number): number => {
 };
 
 export const QuotationManager: React.FC = () => {
-    const { projects, printRates } = useContent();
+    const { projects, printRates, orders } = useContent();
     const [quoteId, setQuoteId] = useState('');
 
     const [details, setDetails] = useState({
@@ -36,7 +36,8 @@ export const QuotationManager: React.FC = () => {
     const previewRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const newId = `QT-${Math.floor(100000 + Math.random() * 900000)}`;
+        const nextQuoteNumber = (orders ? orders.length + 1 : 1).toString().padStart(6, '0');
+        const newId = `QT-${nextQuoteNumber}`;
         setQuoteId(newId);
         // Set initial specs if not set
         if (printRates.length > 0 && !printSpec.inkCoverage) {
@@ -48,7 +49,7 @@ export const QuotationManager: React.FC = () => {
                 sides: firstRate.sides
             });
         }
-    }, [printRates]);
+    }, [printRates, orders]);
 
     const selectedProject = useMemo(() => {
         return projects.find(p => p.id === details.projectId) || null;

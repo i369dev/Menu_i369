@@ -113,10 +113,9 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({
                                 <td className="p-2">
                                     <div className="font-bold">{project?.title} Menu Design (Both Sides)</div>
                                     <ul className="list-disc pl-5 text-gray-600">
-                                        <li>50+ items</li>
                                         <li>User Generate Images or Stock Images</li>
                                         <li>Design Delivery: 1 - 2 Days</li>
-                                        <li>Unlimited Revisions</li>
+                                        <li>Flexible Revisions</li>
                                     </ul>
                                 </td>
                                 <td className="p-2 text-right align-top">1.00</td>
