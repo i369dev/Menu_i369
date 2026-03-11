@@ -54,6 +54,14 @@ export const TextArea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement
     />
 );
 
+export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = (props) => (
+    <select
+        {...props}
+        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+    />
+);
+
+
 export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'danger' | 'secondary' | 'success' }> = ({ variant = 'primary', className, children, type = "button", ...props }) => {
     const baseClass = "px-4 py-2 rounded-md text-sm font-bold uppercase tracking-wide transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:blur-[2px] shadow-sm";
     const variants = {

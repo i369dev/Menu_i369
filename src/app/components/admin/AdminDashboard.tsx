@@ -10,6 +10,7 @@ import { OrderManager } from './tabs/OrderManager';
 import { AnalyticsManager } from './tabs/AnalyticsManager';
 import { QuotationManager } from './tabs/QuotationManager';
 import { QuotationTemplateManager } from './tabs/QuotationTemplateManager';
+import { PrintRatesManager } from './tabs/PrintRatesManager';
 import { useAuth } from '@/context/AuthContext';
 import { LoginView } from './LoginView';
 import { UserManager } from './tabs/UserManager';
@@ -19,7 +20,7 @@ interface AdminDashboardProps {
     onExit: () => void;
 }
 
-const ALL_TABS = ['Analytics', 'Projects', 'Quote Generator', 'Quote Template', 'Curation', 'About', 'Trusted By', 'Settings', 'Users & Roles', 'Orders'] as const;
+const ALL_TABS = ['Analytics', 'Projects', 'Quote Generator', 'Quote Template', 'Print Rates', 'Curation', 'About', 'Trusted By', 'Settings', 'Users & Roles', 'Orders'] as const;
 type Tab = typeof ALL_TABS[number];
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit }) => {
@@ -68,6 +69,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit }) => {
             case 'Projects': return <ProjectManager />;
             case 'Quote Generator': return <QuotationManager />;
             case 'Quote Template': return <QuotationTemplateManager />;
+            case 'Print Rates': return <PrintRatesManager />;
             case 'Curation': return <CurationManager />;
             case 'About': return <AboutManager />;
             case 'Trusted By': return <ClientManager />;

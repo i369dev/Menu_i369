@@ -88,6 +88,19 @@ export interface TrustedClient {
   isVisible?: boolean; // New Visibility Toggle
 }
 
+export interface PrintRate {
+  id: string;
+  inkCoverage: string;
+  paperType: string;
+  weight: string; // Can be string like '-'
+  sides: string;
+  price_tier1: number; // Qty < 50
+  price_tier2: number; // Qty 51-100
+  price_tier3: number; // Qty 101-500
+  price_tier4: number; // Qty 501-1000
+  price_tier5: number; // Qty > 1000
+}
+
 export interface SiteConfig {
   unitPriceIncrease: number; // Keep for type compatibility if needed, though unused
   // Branding Assets

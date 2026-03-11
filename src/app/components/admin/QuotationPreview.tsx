@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Project, SiteConfig } from '../../types';
+import { Project, PrintRate } from '../../types';
 import { useContent } from '../../context/ContentContext';
 import { format } from 'date-fns';
 
@@ -16,9 +16,15 @@ interface QuotationPreviewProps {
     };
     project: Project | null;
     quoteId: string;
+    printRate: PrintRate | null;
+    designCost: number;
+    printCost: number;
+    totalCost: number;
 }
 
-export const QuotationPreview: React.FC<QuotationPreviewProps> = ({ details, project, quoteId }) => {
+export const QuotationPreview: React.FC<QuotationPreviewProps> = ({ 
+    details, project, quoteId, printRate, designCost, printCost, totalCost 
+}) => {
     const { config } = useContent();
 
     const interpolate = (template: string) => {
@@ -35,17 +41,13 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({ details, pro
     const expiryDate = new Date();
     expiryDate.setDate(issueDate.getDate() + 7);
 
-    const calculateTotal = () => {
-        if (!project) return 0;
-        const basePrice = project.pricing?.designAndPrint?.basePrice || 0;
-        const minQty = project.pricing?.designAndPrint?.minQty || 10;
-        const unitPrice = project.pricing?.designAndPrint?.unitPrice || 0;
-        const extraQty = Math.max(0, details.quantity - minQty);
-        const incrementalCost = extraQty * unitPrice;
-        return basePrice + incrementalCost;
+    const getPriceForQuantity = (rate: PrintRate, quantity: number): number => {
+        if (quantity < 51) return rate.price_tier1;
+        if (quantity < 101) return rate.price_tier2;
+        if (quantity < 501) return rate.price_tier3;
+        if (quantity < 1001) return rate.price_tier4;
+        return rate.price_tier5;
     };
-
-    const total = calculateTotal();
     
     const Page: React.FC<{ children: React.ReactNode, isLast?: boolean }> = ({ children, isLast }) => (
         <div className={`a4-page-container bg-white w-[210mm] h-[297mm] shadow-lg mx-auto font-sans text-xs text-gray-800 p-12 box-border overflow-hidden relative ${isLast ? '' : 'mb-8'}`}>
@@ -109,7 +111,7 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({ details, pro
                             <tr className="border-b">
                                 <td className="p-2 align-top">1</td>
                                 <td className="p-2">
-                                    <div className="font-bold">A3 Trifold Menu Design (Both Sides)</div>
+                                    <div className="font-bold">{project?.title} Menu Design (Both Sides)</div>
                                     <ul className="list-disc pl-5 text-gray-600">
                                         <li>50+ items</li>
                                         <li>User Generate Images or Stock Images</li>
@@ -118,23 +120,26 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({ details, pro
                                     </ul>
                                 </td>
                                 <td className="p-2 text-right align-top">1.00</td>
-                                <td className="p-2 text-right align-top">{total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                <td className="p-2 text-right align-top">{total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td className="p-2 text-right align-top">{designCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td className="p-2 text-right align-top">{designCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                             </tr>
-                             <tr className="border-b">
-                                <td className="p-2 align-top"></td>
-                                <td className="p-2">
-                                    <div className="font-bold">A3 Trifold Menu Print</div>
-                                    <ul className="list-disc pl-5 text-gray-600">
-                                        <li>{details.quantity} Printed Menu Cards</li>
-                                        <li>Matte Laminated</li>
-                                        <li>Ivory Board</li>
-                                    </ul>
-                                </td>
-                                <td className="p-2 text-right align-top"></td>
-                                <td className="p-2 text-right align-top"></td>
-                                <td className="p-2 text-right align-top"></td>
-                            </tr>
+                            {printRate && (
+                                <tr className="border-b">
+                                    <td className="p-2 align-top">2</td>
+                                    <td className="p-2">
+                                        <div className="font-bold">{project?.title} Menu Print</div>
+                                        <ul className="list-disc pl-5 text-gray-600">
+                                            <li>Paper: {printRate.paperType}</li>
+                                            <li>Weight: {printRate.weight} gsm</li>
+                                            <li>Sides: {printRate.sides}</li>
+                                            <li>Ink: {printRate.inkCoverage}</li>
+                                        </ul>
+                                    </td>
+                                    <td className="p-2 text-right align-top">{details.quantity}</td>
+                                    <td className="p-2 text-right align-top">{getPriceForQuantity(printRate, details.quantity).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    <td className="p-2 text-right align-top">{printCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                </tr>
+                            )}
                              <tr className="border-b">
                                 <td className="p-2 align-top"></td>
                                 <td className="p-2 font-bold">FREE DELIVERY</td>
@@ -150,11 +155,11 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({ details, pro
                              <div className="float-right w-1/2">
                                 <div className="flex justify-between p-2">
                                     <span>Sub Total</span>
-                                    <span>{total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    <span>{totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 </div>
                                 <div className="flex justify-between p-2 bg-gray-100 font-bold text-base">
                                     <span>Total</span>
-                                    <span>LKR {total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    <span>LKR {totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 </div>
                             </div>
                         </div>

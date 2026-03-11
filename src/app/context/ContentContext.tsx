@@ -1,9 +1,11 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Project, CuratedItem, Order, SiteConfig, TrustedClient } from '../types';
+import { Project, CuratedItem, Order, SiteConfig, TrustedClient, PrintRate } from '../types';
 import { initialProjects, initialCuratedItems, initialConfig, initialClients } from '../utils/defaults';
+import { initialPrintRates } from '../utils/printRatesData';
 import { Language } from '../utils/translations';
 import { firestore } from '@/firebase';
-import { doc, onSnapshot, setDoc, collection, writeBatch, deleteDoc } from "firebase/firestore";
+import { doc, onSnapshot, setDoc, collection, writeBatch, deleteDoc, getDocs, query } from "firebase/firestore";
 
 interface ContentContextType {
     projects: Project[];
@@ -16,6 +18,8 @@ interface ContentContextType {
     setConfig: (config: SiteConfig) => Promise<void>;
     trustedClients: TrustedClient[];
     setTrustedClients: (clients: TrustedClient[]) => Promise<void>;
+    printRates: PrintRate[];
+    setPrintRates: (rates: PrintRate[]) => Promise<void>;
     
     // Frontend Getters (Filtered by Visibility)
     getLocalizedProjects: (lang: Language) => Project[];
@@ -32,10 +36,12 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const [orders, setOrdersState] = useState<Order[]>([]);
     const [config, setConfigState] = useState<SiteConfig>(initialConfig);
     const [trustedClients, setTrustedClientsState] = useState<TrustedClient[]>(initialClients);
+    const [printRates, setPrintRatesState] = useState<PrintRate[]>([]);
 
     useEffect(() => {
         const contentDocRef = doc(firestore, "content", "main");
         const projectsColRef = collection(firestore, "projects");
+        const printRatesColRef = collection(firestore, "printRates");
 
         // Listener for config, orders, etc. from the single doc
         const unsubContent = onSnapshot(contentDocRef, (doc) => {
@@ -76,9 +82,31 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
             }
         });
 
+        // Listener for print rates collection
+        const unsubPrintRates = onSnapshot(printRatesColRef, async (snapshot) => {
+            if (snapshot.empty && initialPrintRates.length > 0) {
+                 console.log("Print rates collection is empty. Seeding initial data...");
+                try {
+                    const batch = writeBatch(firestore);
+                    initialPrintRates.forEach(rate => {
+                        const rateRef = doc(firestore, "printRates", rate.id);
+                        batch.set(rateRef, rate);
+                    });
+                    await batch.commit();
+                } catch (e) {
+                    console.error("Error seeding print rates:", e);
+                }
+            } else {
+                const ratesData = snapshot.docs.map(doc => doc.data() as PrintRate);
+                setPrintRatesState(ratesData);
+            }
+        });
+
+
         return () => {
             unsubContent();
             unsubProjects();
+            unsubPrintRates();
         };
     }, []);
 
@@ -129,6 +157,31 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const setTrustedClients = async (c: TrustedClient[]) => {
         setTrustedClientsState(c);
         await saveContent({ trustedClients: c });
+    };
+    
+    const setPrintRates = async (rates: PrintRate[]) => {
+        try {
+            const batch = writeBatch(firestore);
+            const ratesCollectionRef = collection(firestore, "printRates");
+            
+            // First, delete all existing documents
+            const querySnapshot = await getDocs(query(ratesCollectionRef));
+            querySnapshot.forEach((doc) => {
+                batch.delete(doc.ref);
+            });
+
+            // Now, add all the new rates
+            rates.forEach(rate => {
+                const docRef = doc(ratesCollectionRef, rate.id);
+                batch.set(docRef, rate);
+            });
+            
+            await batch.commit();
+            setPrintRatesState(rates); // Update local state
+        } catch (error) {
+            console.error("Error updating print rates:", error);
+            throw error; // Re-throw to be caught in the UI
+        }
     };
 
     // Filter projects for frontend view (isVisible !== false)
@@ -191,6 +244,8 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
             setConfig,
             trustedClients,
             setTrustedClients,
+            printRates,
+            setPrintRates,
             getLocalizedProjects,
             getLocalizedConfig,
             getVisibleCuratedItems,

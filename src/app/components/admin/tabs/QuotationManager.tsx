@@ -1,14 +1,22 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useContent } from '../../../context/ContentContext';
-import { Project } from '../../../types';
-import { Card, SectionHeader, InputGroup, TextInput, Button, TextArea } from '../ui/AdminShared';
+import { PrintRate, Project } from '../../../types';
+import { Card, SectionHeader, InputGroup, TextInput, Button, TextArea, Select } from '../ui/AdminShared';
 import { QuotationPreview } from '../QuotationPreview';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
+const getPriceForQuantity = (rate: PrintRate, quantity: number): number => {
+    if (quantity < 51) return rate.price_tier1;
+    if (quantity < 101) return rate.price_tier2;
+    if (quantity < 501) return rate.price_tier3;
+    if (quantity < 1001) return rate.price_tier4;
+    return rate.price_tier5;
+};
+
 export const QuotationManager: React.FC = () => {
-    const { projects } = useContent();
+    const { projects, printRates } = useContent();
     const [quoteId, setQuoteId] = useState('');
 
     const [details, setDetails] = useState({
@@ -21,16 +29,70 @@ export const QuotationManager: React.FC = () => {
         quantity: 10,
     });
 
+    const [printSpec, setPrintSpec] = useState({
+        inkCoverage: '', paperType: '', weight: '', sides: ''
+    });
+
     const previewRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const newId = `QT-${Math.floor(100000 + Math.random() * 900000)}`;
         setQuoteId(newId);
-    }, []);
+        // Set initial specs if not set
+        if (printRates.length > 0 && !printSpec.inkCoverage) {
+            const firstRate = printRates[0];
+            setPrintSpec({
+                inkCoverage: firstRate.inkCoverage,
+                paperType: firstRate.paperType,
+                weight: firstRate.weight,
+                sides: firstRate.sides
+            });
+        }
+    }, [printRates]);
 
     const selectedProject = useMemo(() => {
         return projects.find(p => p.id === details.projectId) || null;
     }, [details.projectId, projects]);
+
+    // --- Cascading Dropdown Logic ---
+    const specOptions = useMemo(() => {
+        const inks = [...new Set(printRates.map(r => r.inkCoverage))];
+        const papers = printSpec.inkCoverage ? [...new Set(printRates.filter(r => r.inkCoverage === printSpec.inkCoverage).map(r => r.paperType))] : [];
+        const weights = printSpec.paperType ? [...new Set(printRates.filter(r => r.inkCoverage === printSpec.inkCoverage && r.paperType === printSpec.paperType).map(r => r.weight))] : [];
+        const sides = printSpec.weight ? [...new Set(printRates.filter(r => r.inkCoverage === printSpec.inkCoverage && r.paperType === printSpec.paperType && r.weight === printSpec.weight).map(r => r.sides))] : [];
+        return { inks, papers, weights, sides };
+    }, [printRates, printSpec]);
+
+    const handleSpecChange = (field: keyof typeof printSpec, value: string) => {
+        setPrintSpec(prev => {
+            const newState = { ...prev, [field]: value };
+            // Reset dependent fields
+            if (field === 'inkCoverage') { newState.paperType = ''; newState.weight = ''; newState.sides = ''; }
+            if (field === 'paperType') { newState.weight = ''; newState.sides = ''; }
+            if (field === 'weight') { newState.sides = ''; }
+            return newState;
+        });
+    };
+
+    const { designCost, printCost, selectedPrintRate } = useMemo(() => {
+        const designCost = selectedProject?.pricing?.designOnly || 0;
+        
+        const rate = printRates.find(r => 
+            r.inkCoverage === printSpec.inkCoverage &&
+            r.paperType === printSpec.paperType &&
+            r.weight === printSpec.weight &&
+            r.sides === printSpec.sides
+        );
+
+        if (!rate) return { designCost, printCost: 0, selectedPrintRate: null };
+        
+        const unitPrice = getPriceForQuantity(rate, details.quantity);
+        const totalPrintCost = unitPrice * details.quantity;
+        
+        return { designCost, printCost: totalPrintCost, selectedPrintRate: rate };
+    }, [selectedProject, printRates, printSpec, details.quantity]);
+
+    const totalCost = designCost + printCost;
 
     const handleDetailChange = (field: keyof typeof details, value: string | number) => {
         setDetails(prev => ({ ...prev, [field]: value }));
@@ -58,9 +120,7 @@ export const QuotationManager: React.FC = () => {
           }
           
           const canvas = await html2canvas(page, {
-            scale: 3, // Increase scale for higher resolution output
-            useCORS: true,
-            logging: false, // Disables logging for cleaner console
+            scale: 3, useCORS: true, logging: false,
             width: page.offsetWidth,
             height: page.offsetHeight,
           });
@@ -83,19 +143,47 @@ export const QuotationManager: React.FC = () => {
                     <SectionHeader title="Create Quotation" />
                     <div className="space-y-4">
                         <InputGroup label="Select Project">
-                            <select
+                            <Select
                                 value={details.projectId || ''}
                                 onChange={e => handleDetailChange('projectId', Number(e.target.value))}
-                                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                             >
                                 {projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
-                            </select>
+                            </Select>
                         </InputGroup>
+                        <hr />
                         <InputGroup label="Client Name"><TextInput value={details.name} onChange={e => handleDetailChange('name', e.target.value)} /></InputGroup>
                         <InputGroup label="Mobile Number"><TextInput value={details.mobile} onChange={e => handleDetailChange('mobile', e.target.value)} /></InputGroup>
                         <InputGroup label="Business / Hotel"><TextInput value={details.business} onChange={e => handleDetailChange('business', e.target.value)} /></InputGroup>
                         <InputGroup label="Delivery Address"><TextArea value={details.address} onChange={e => handleDetailChange('address', e.target.value)} rows={3} /></InputGroup>
-                        <InputGroup label="Quantity"><TextInput type="number" value={details.quantity} onChange={e => handleDetailChange('quantity', Number(e.target.value))} /></InputGroup>
+                        <hr />
+                        <h4 className="font-bold text-sm">Print Specifications</h4>
+                        <InputGroup label="Ink Coverage">
+                            <Select value={printSpec.inkCoverage} onChange={e => handleSpecChange('inkCoverage', e.target.value)}>
+                                <option value="">Select...</option>
+                                {specOptions.inks.map(o => <option key={o} value={o}>{o}</option>)}
+                            </Select>
+                        </InputGroup>
+                        <InputGroup label="Paper Type">
+                             <Select value={printSpec.paperType} onChange={e => handleSpecChange('paperType', e.target.value)} disabled={!printSpec.inkCoverage}>
+                                <option value="">Select...</option>
+                                {specOptions.papers.map(o => <option key={o} value={o}>{o}</option>)}
+                            </Select>
+                        </InputGroup>
+                        <InputGroup label="Weight (GSM)">
+                            <Select value={printSpec.weight} onChange={e => handleSpecChange('weight', e.target.value)} disabled={!printSpec.paperType}>
+                                <option value="">Select...</option>
+                                {specOptions.weights.map(o => <option key={o} value={o}>{o}</option>)}
+                            </Select>
+                        </InputGroup>
+                        <InputGroup label="Sides">
+                            <Select value={printSpec.sides} onChange={e => handleSpecChange('sides', e.target.value)} disabled={!printSpec.weight}>
+                                <option value="">Select...</option>
+                                {specOptions.sides.map(o => <option key={o} value={o}>{o}</option>)}
+                            </Select>
+                        </InputGroup>
+                         <InputGroup label="Quantity"><TextInput type="number" value={details.quantity} onChange={e => handleDetailChange('quantity', Number(e.target.value))} /></InputGroup>
+                        <hr />
+
                         <InputGroup label="Notes"><TextArea value={details.note} onChange={e => handleDetailChange('note', e.target.value)} rows={3} /></InputGroup>
                         
                         <div className="pt-4 border-t border-gray-200">
@@ -116,6 +204,10 @@ export const QuotationManager: React.FC = () => {
                         details={details}
                         project={selectedProject}
                         quoteId={quoteId}
+                        printRate={selectedPrintRate}
+                        designCost={designCost}
+                        printCost={printCost}
+                        totalCost={totalCost}
                     />
                 </div>
             </div>
