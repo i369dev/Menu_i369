@@ -1,9 +1,8 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut, type User as FirebaseUser } from 'firebase/auth';
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, getDocs, collection } from 'firebase/firestore';
 import { auth, firestore } from '@/firebase';
 import { AppUser } from '@/app/types';
 
@@ -40,19 +39,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setUser(firebaseUser);
                 const userDocRef = doc(firestore, 'users', firebaseUser.uid);
                 
-                const unsubProfile = onSnapshot(userDocRef, (docSnapshot) => {
+                const unsubProfile = onSnapshot(userDocRef, async (docSnapshot) => {
                     if (docSnapshot.exists()) {
                         setAppUser({ uid: docSnapshot.id, ...docSnapshot.data() } as AppUser);
                         setLoading(false);
                     } else {
-                        // This might be the very first login. Let's make this user a Super Admin.
-                        // A more robust solution would check if ANY user exists in the collection.
-                        // For this app, we assume if the user doc is missing for the first logged-in user, they become admin.
-                        bootstrapSuperAdmin(firebaseUser).then(adminUser => {
+                        // User is authenticated but has no profile. Check if they should be the Super Admin.
+                        const usersCollectionRef = collection(firestore, 'users');
+                        const allUsersSnapshot = await getDocs(usersCollectionRef);
+                        
+                        if (allUsersSnapshot.empty) {
+                            // This is the very first user. Bootstrap them as a Super Admin.
+                            const adminUser = await bootstrapSuperAdmin(firebaseUser);
                             setAppUser(adminUser);
-                        }).finally(() => {
-                            setLoading(false);
-                        });
+                        } else {
+                            // Other users exist. This is an orphaned account without a profile.
+                            // For security, deny access and log them out.
+                            console.error("Authenticated user has no profile in Firestore and is not the first user. Logging out for security.");
+                            await signOut(auth);
+                            setAppUser(null);
+                        }
+                        setLoading(false);
                     }
                 }, (error) => {
                     console.error("Error fetching user profile:", error);

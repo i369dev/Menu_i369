@@ -16,6 +16,7 @@ export const Loader: React.FC<LoaderProps> = ({ onComplete, initialLanguage, onL
   const [showLangModal, setShowLangModal] = useState(false);
   const [hasPaused, setHasPaused] = useState(false);
   const [animationStage, setAnimationStage] = useState<'counting' | 'cleared' | 'aperture' | 'full'>('counting');
+  const [isReadyToCount, setIsReadyToCount] = useState(false);
   
   const [windowSize, setWindowSize] = useState({ 
     width: typeof window !== 'undefined' ? window.innerWidth : 0, 
@@ -31,7 +32,21 @@ export const Loader: React.FC<LoaderProps> = ({ onComplete, initialLanguage, onL
   
   const breakpoint = useRef(Math.floor(Math.random() * (60 - 20 + 1) + 20));
 
+  // Preload the logo and start counting only when it's ready
   useEffect(() => {
+    if (config.loadingLogo) {
+        const img = new Image();
+        img.src = config.loadingLogo;
+        img.onload = () => setIsReadyToCount(true);
+        img.onerror = () => setIsReadyToCount(true); // Start anyway if logo fails
+    } else {
+        setIsReadyToCount(true); // Start if there's no logo
+    }
+  }, [config.loadingLogo]);
+
+  useEffect(() => {
+    if (!isReadyToCount) return;
+
     const interval = setInterval(() => {
       setCount((prev) => {
         if (!initialLanguage && !hasPaused && prev + 1 === breakpoint.current) {
@@ -52,7 +67,7 @@ export const Loader: React.FC<LoaderProps> = ({ onComplete, initialLanguage, onL
     }, 20); 
     
     return () => clearInterval(interval);
-  }, [hasPaused, showLangModal, initialLanguage]);
+  }, [isReadyToCount, hasPaused, showLangModal, initialLanguage]);
 
   useEffect(() => {
       if (animationStage === 'cleared') {
@@ -133,7 +148,7 @@ export const Loader: React.FC<LoaderProps> = ({ onComplete, initialLanguage, onL
       >
           <div className="relative z-10 flex flex-col items-center justify-center">
               {config.loadingLogo && (
-                <motion.img 
+                <img 
                     src={config.loadingLogo}
                     alt="Loading"
                     className="w-32 md:w-40 object-contain mb-8"
