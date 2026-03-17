@@ -25,6 +25,7 @@ export const QuotationManager: React.FC = () => {
     const [quoteId, setQuoteId] = useState('');
     const [issueDate, setIssueDate] = useState(new Date());
     const [expiryDate, setExpiryDate] = useState<Date | undefined>(addDays(new Date(), 7));
+    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
     const [details, setDetails] = useState({
         name: 'Mr Tharindu',
@@ -167,7 +168,7 @@ export const QuotationManager: React.FC = () => {
                         <div className="grid grid-cols-2 gap-4">
                            <InputGroup label="Issue Date"><TextInput value={format(issueDate, 'PPP')} disabled /></InputGroup>
                            <InputGroup label="Expiry Date">
-                                <Popover>
+                                <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                                     <PopoverTrigger asChild>
                                         <Button
                                             variant={"outline"}
@@ -184,7 +185,10 @@ export const QuotationManager: React.FC = () => {
                                         <Calendar
                                             mode="single"
                                             selected={expiryDate}
-                                            onSelect={setExpiryDate}
+                                            onSelect={(date) => {
+                                                setExpiryDate(date);
+                                                setIsCalendarOpen(false);
+                                            }}
                                             initialFocus
                                         />
                                     </PopoverContent>
