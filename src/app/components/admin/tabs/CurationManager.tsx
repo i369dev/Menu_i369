@@ -22,8 +22,8 @@ export const CurationManager: React.FC = () => {
         localConfig.curationIntro_si !== config.curationIntro_si ||
         localConfig.curationIntro_ta !== config.curationIntro_ta;
 
-    const saveCurationText = () => {
-        setConfig(localConfig);
+    const saveCurationText = async () => {
+        await setConfig(localConfig);
         alert("Curation text updated!");
     };
 
@@ -63,20 +63,20 @@ export const CurationManager: React.FC = () => {
         } else {
             newItems = curatedItems.map(i => i.id === editingItemId ? updatedItem as CuratedItem : i);
         }
-        setCuratedItems(newItems);
+        await setCuratedItems(newItems);
         setEditingItemId(null);
     };
 
-    const deleteItem = (id: number, e: React.MouseEvent) => {
+    const deleteItem = async (id: number, e: React.MouseEvent) => {
         e.stopPropagation();
         if (confirmDelete("Permanently delete this showcase item?")) {
-            setCuratedItems(curatedItems.filter(i => i.id !== id));
+            await setCuratedItems(curatedItems.filter(i => i.id !== id));
         }
     };
 
-    const toggleVisibility = (id: number, visible: boolean) => {
+    const toggleVisibility = async (id: number, visible: boolean) => {
         const updated = curatedItems.map(i => i.id === id ? { ...i, isVisible: visible } : i);
-        setCuratedItems(updated);
+        await setCuratedItems(updated);
     };
 
     return (

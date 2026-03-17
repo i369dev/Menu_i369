@@ -56,11 +56,11 @@ const defaultQuotationTerms = `
 
 export const initialConfig: SiteConfig = {
     unitPriceIncrease: 0,
-    logoLight: "https://i.ibb.co/3Wfjm2c/i369-logo.png",
-    logoDark: "https://i.ibb.co/3Wfjm2c/i369-logo.png",
-    loadingLogo: "https://i.ibb.co/3Wfjm2c/i369-logo.png",
-    aboutLogo: "https://i.ibb.co/3Wfjm2c/i369-logo.png",
-    footerLogo: "https://i.ibb.co/3Wfjm2c/i369-logo.png",
+    logoLight: "",
+    logoDark: "",
+    loadingLogo: "",
+    aboutLogo: "",
+    footerLogo: "",
     whatsappIcon: "https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg",
     
     whatsappNumber: "94770000000",

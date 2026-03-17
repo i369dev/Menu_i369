@@ -139,23 +139,19 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
 
     const setCuratedItems = async (i: CuratedItem[]) => {
-        setCuratedItemsState(i);
         await saveContent({ curatedItems: i });
     };
 
     const addOrder = async (order: Order) => {
         const newOrders = [order, ...orders];
-        setOrdersState(newOrders);
         await saveContent({ orders: newOrders });
     };
 
     const setConfig = async (c: SiteConfig) => {
-        setConfigState(c);
         await saveContent({ config: c });
     };
 
     const setTrustedClients = async (c: TrustedClient[]) => {
-        setTrustedClientsState(c);
         await saveContent({ trustedClients: c });
     };
     
@@ -164,23 +160,20 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
             const batch = writeBatch(firestore);
             const ratesCollectionRef = collection(firestore, "printRates");
             
-            // First, delete all existing documents
             const querySnapshot = await getDocs(query(ratesCollectionRef));
             querySnapshot.forEach((doc) => {
                 batch.delete(doc.ref);
             });
 
-            // Now, add all the new rates
             rates.forEach(rate => {
                 const docRef = doc(ratesCollectionRef, rate.id);
                 batch.set(docRef, rate);
             });
             
             await batch.commit();
-            setPrintRatesState(rates); // Update local state
         } catch (error) {
             console.error("Error updating print rates:", error);
-            throw error; // Re-throw to be caught in the UI
+            throw error;
         }
     };
 
