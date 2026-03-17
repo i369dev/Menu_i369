@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { useContent } from '../../../context/ContentContext';
-import { GlobalConfig, ContactEmail } from '../../../types';
+import { SiteConfig, ContactEmail } from '../../../types';
 import { Card, SectionHeader, InputGroup, FileUpload, confirmDelete, Button, LangTabs, TextInput, TextArea } from '../ui/AdminShared';
 import { uploadFileToStorage } from '../../../utils/storage';
 
@@ -27,17 +27,18 @@ export const SettingsManager: React.FC = () => {
             if (logoDarkFile) updatedConfig.logoDark = await uploadFileToStorage(logoDarkFile, `logos/logoDark_${Date.now()}`);
             if (loadingLogoFile) updatedConfig.loadingLogo = await uploadFileToStorage(loadingLogoFile, `logos/loadingLogo_${Date.now()}`);
             if (footerLogoFile) updatedConfig.footerLogo = await uploadFileToStorage(footerLogoFile, `logos/footerLogo_${Date.now()}`);
+            
+            await setConfig(updatedConfig);
+            setLocalConfig(updatedConfig); // Sync local state with new config
+            setLogoLightFile(null);
+            setLogoDarkFile(null);
+            setLoadingLogoFile(null);
+            setFooterLogoFile(null);
+            alert("Branding assets updated!");
         } catch(e) {
+            console.error("Asset upload failed:", e);
             alert('Asset upload failed!');
-            return;
         }
-        
-        setConfig(updatedConfig);
-        setLogoLightFile(null);
-        setLogoDarkFile(null);
-        setLoadingLogoFile(null);
-        setFooterLogoFile(null);
-        alert("Branding assets updated!");
     };
 
     const saveFooterContact = async () => {
@@ -50,13 +51,14 @@ export const SettingsManager: React.FC = () => {
                 return;
             }
         }
-        setConfig(updatedConfig);
+        await setConfig(updatedConfig);
+        setLocalConfig(updatedConfig);
         setWhatsappIconFile(null);
         alert("Footer & Contact settings updated!");
     };
     
-    const savePrivacyPolicy = () => {
-        setConfig(localConfig);
+    const savePrivacyPolicy = async () => {
+        await setConfig(localConfig);
         alert("Privacy Policy updated!");
     };
 
@@ -70,22 +72,26 @@ export const SettingsManager: React.FC = () => {
         }
     };
 
-    const saveEmail = () => {
+    const saveEmail = async () => {
         if (!tempEmail) return alert("Email address required");
         let newList;
         if (editingEmailId === -1) {
-            newList = [...(config.contactEmails || []), { id: Date.now(), email: tempEmail }];
+            newList = [...(localConfig.contactEmails || []), { id: Date.now(), email: tempEmail }];
         } else {
-            newList = (config.contactEmails || []).map(e => e.id === editingEmailId ? { ...e, email: tempEmail } : e);
+            newList = (localConfig.contactEmails || []).map(e => e.id === editingEmailId ? { ...e, email: tempEmail } : e);
         }
-        setConfig({ ...config, contactEmails: newList });
+        const updatedConfig = { ...localConfig, contactEmails: newList };
+        await setConfig(updatedConfig);
+        setLocalConfig(updatedConfig);
         setEditingEmailId(null);
     };
 
-    const deleteEmail = (id: number) => {
+    const deleteEmail = async (id: number) => {
         if (confirmDelete("Permanently remove this email address?")) {
-            const newList = (config.contactEmails || []).filter(e => e.id !== id);
-            setConfig({ ...config, contactEmails: newList });
+            const newList = (localConfig.contactEmails || []).filter(e => e.id !== id);
+            const updatedConfig = { ...localConfig, contactEmails: newList };
+            await setConfig(updatedConfig);
+            setLocalConfig(updatedConfig);
         }
     };
 
@@ -232,5 +238,3 @@ export const SettingsManager: React.FC = () => {
         </div>
     );
 };
-
-    
