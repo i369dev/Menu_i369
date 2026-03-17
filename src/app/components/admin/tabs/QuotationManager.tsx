@@ -6,6 +6,11 @@ import { Card, SectionHeader, InputGroup, TextInput, Button, TextArea, Select } 
 import { QuotationPreview } from '../QuotationPreview';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { CalendarIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format, addDays } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 const getPriceForQuantity = (rate: PrintRate, quantity: number): number => {
     if (quantity < 51) return rate.price_tier1;
@@ -18,6 +23,8 @@ const getPriceForQuantity = (rate: PrintRate, quantity: number): number => {
 export const QuotationManager: React.FC = () => {
     const { projects, printRates, orders } = useContent();
     const [quoteId, setQuoteId] = useState('');
+    const [issueDate, setIssueDate] = useState(new Date());
+    const [expiryDate, setExpiryDate] = useState<Date | undefined>(addDays(new Date(), 7));
 
     const [details, setDetails] = useState({
         name: 'Mr Tharindu',
@@ -157,6 +164,34 @@ export const QuotationManager: React.FC = () => {
                         <InputGroup label="Business / Hotel"><TextInput value={details.business} onChange={e => handleDetailChange('business', e.target.value)} /></InputGroup>
                         <InputGroup label="Delivery Address"><TextArea value={details.address} onChange={e => handleDetailChange('address', e.target.value)} rows={3} /></InputGroup>
                         <hr />
+                        <div className="grid grid-cols-2 gap-4">
+                           <InputGroup label="Issue Date"><TextInput value={format(issueDate, 'PPP')} disabled /></InputGroup>
+                           <InputGroup label="Expiry Date">
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !expiryDate && "text-muted-foreground"
+                                            )}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {expiryDate ? format(expiryDate, "PPP") : <span>Pick a date</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                        <Calendar
+                                            mode="single"
+                                            selected={expiryDate}
+                                            onSelect={setExpiryDate}
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </InputGroup>
+                        </div>
+                        <hr />
                         <h4 className="font-bold text-sm">Print Specifications</h4>
                         <InputGroup label="Ink Coverage">
                             <Select value={printSpec.inkCoverage} onChange={e => handleSpecChange('inkCoverage', e.target.value)}>
@@ -209,6 +244,8 @@ export const QuotationManager: React.FC = () => {
                         designCost={designCost}
                         printCost={printCost}
                         totalCost={totalCost}
+                        issueDate={issueDate}
+                        expiryDate={expiryDate || new Date()}
                     />
                 </div>
             </div>

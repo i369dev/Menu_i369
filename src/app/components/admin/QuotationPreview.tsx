@@ -20,10 +20,12 @@ interface QuotationPreviewProps {
     designCost: number;
     printCost: number;
     totalCost: number;
+    issueDate: Date;
+    expiryDate: Date;
 }
 
 export const QuotationPreview: React.FC<QuotationPreviewProps> = ({ 
-    details, project, quoteId, printRate, designCost, printCost, totalCost 
+    details, project, quoteId, printRate, designCost, printCost, totalCost, issueDate, expiryDate
 }) => {
     const { config } = useContent();
 
@@ -36,10 +38,6 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({
 
     const headerHtml = interpolate(config.quotationHeader || '');
     const termsHtml = interpolate(config.quotationTerms || '');
-
-    const issueDate = new Date();
-    const expiryDate = new Date();
-    expiryDate.setDate(issueDate.getDate() + 7);
 
     const getPriceForQuantity = (rate: PrintRate, quantity: number): number => {
         if (quantity < 51) return rate.price_tier1;
@@ -86,7 +84,8 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({
                             <div className="whitespace-pre-line">{details.address}</div>
                         </div>
                         <div className="float-right w-1/2 text-right">
-                            <div className="inline-grid grid-cols-[auto,auto] gap-x-4 gap-y-1">
+                             <div className="inline-grid grid-cols-[auto,auto] gap-x-4 gap-y-1">
+                                <span className="font-bold text-right">Date of Issue :</span><span>{format(issueDate, 'dd MMM yyyy')}</span>
                                 <span className="font-bold text-right">Expiry Date :</span><span>{format(expiryDate, 'dd MMM yyyy')}</span>
                             </div>
                         </div>
