@@ -137,9 +137,6 @@ export const Loader: React.FC<LoaderProps> = ({ onComplete, initialLanguage, onL
                     src={config.loadingLogo}
                     alt="Loading"
                     className="w-32 md:w-40 object-contain mb-8"
-                    initial={{ opacity: 0, y: 10 }} 
-                    animate={{ opacity: 1, y: 0 }} 
-                    transition={{ delay: 0.2 }}
                     style={{ filter: 'none', mixBlendMode: 'normal' }}
                 />
               )}
