@@ -45,6 +45,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ language }) => {
         <div className="w-full md:w-[40%] flex flex-col justify-between md:pr-12 md:border-r border-[#2a1b1b]/10 pb-8 md:pb-0 h-auto md:h-full shrink-0">
             {/* Dynamic Footer Logo */}
             <div className="overflow-hidden flex items-center md:items-start flex-1 mb-8 md:mb-0">
+                {config.footerLogo ? (
                     <motion.img 
                         src={config.footerLogo}
                         alt="Imaginative 369"
@@ -54,6 +55,16 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ language }) => {
                         className="w-full max-w-[85vw] md:max-w-[35vw] object-contain origin-center md:origin-left block"
                         style={{ filter: 'none', opacity: 1, mixBlendMode: 'normal' }}
                     />
+                ) : (
+                    <motion.h1 
+                        initial={{ y: "100%" }}
+                        animate={{ y: "0%" }}
+                        transition={{ duration: 1.2, ease: [0.76, 0, 0.24, 1] }}
+                        className="text-5xl md:text-7xl font-serif text-[#2a1b1b]"
+                    >
+                        Imaginative 369
+                    </motion.h1>
+                )}
             </div>
 
             <div className="flex flex-col justify-end mt-auto shrink-0">
@@ -84,11 +95,13 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ language }) => {
                     whileHover={{ scale: 1.1, rotate: 10 }}
                     transition={{ type: "spring", stiffness: 400, damping: 10 }}
                 >
-                    <img 
-                            src={config.whatsappIcon}
-                            alt="WhatsApp"
-                            className="w-full h-full object-contain drop-shadow-md"
-                    />
+                    {config.whatsappIcon && (
+                        <img 
+                                src={config.whatsappIcon}
+                                alt="WhatsApp"
+                                className="w-full h-full object-contain drop-shadow-md"
+                        />
+                    )}
                 </motion.div>
             </a>
 

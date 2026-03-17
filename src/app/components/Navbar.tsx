@@ -29,16 +29,20 @@ const NavLogo: React.FC<NavLogoProps> = ({ textColor, isMenuOpen }) => {
 
     return (
         <div className="flex flex-col items-start justify-center h-12 w-auto">
-             <img 
-                src={logoSrc}
-                alt="Imaginative 369"
-                className="h-full w-auto object-contain object-left transition-all duration-300"
-                style={{ 
-                    filter: 'none',
-                    opacity: 1,
-                    mixBlendMode: 'normal'
-                }}
-             />
+             {logoSrc ? (
+                <img 
+                    src={logoSrc}
+                    alt="Imaginative 369"
+                    className="h-full w-auto object-contain object-left transition-all duration-300"
+                    style={{ 
+                        filter: 'none',
+                        opacity: 1,
+                        mixBlendMode: 'normal'
+                    }}
+                />
+             ) : (
+                <span className="font-bold text-lg tracking-widest">I369</span>
+             )}
         </div>
     );
 };

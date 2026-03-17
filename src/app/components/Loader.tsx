@@ -132,15 +132,17 @@ export const Loader: React.FC<LoaderProps> = ({ onComplete, initialLanguage, onL
         style={{ opacity: animationStage === 'counting' ? 1 : 0 }}
       >
           <div className="relative z-10 flex flex-col items-center justify-center">
-              <motion.img 
-                  src={config.loadingLogo}
-                  alt="Loading"
-                  className="w-32 md:w-40 object-contain mb-8"
-                  initial={{ opacity: 0, y: 10 }} 
-                  animate={{ opacity: 1, y: 0 }} 
-                  transition={{ delay: 0.2 }}
-                  style={{ filter: 'none', mixBlendMode: 'normal' }}
-              />
+              {config.loadingLogo && (
+                <motion.img 
+                    src={config.loadingLogo}
+                    alt="Loading"
+                    className="w-32 md:w-40 object-contain mb-8"
+                    initial={{ opacity: 0, y: 10 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    transition={{ delay: 0.2 }}
+                    style={{ filter: 'none', mixBlendMode: 'normal' }}
+                />
+              )}
               <div className="relative bg-black px-6 py-2">
                 <span className="text-6xl md:text-9xl font-serif font-light tabular-nums text-white block leading-none">
                     {count}

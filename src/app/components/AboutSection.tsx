@@ -137,12 +137,18 @@ export const AboutSection: React.FC<AboutSectionProps> = ({ language }) => {
              </div>
 
              <div className="flex justify-center lg:justify-end items-center order-1 lg:order-2 mb-12 lg:mb-0">
-                 <img 
-                    src={config.aboutLogo} 
-                    alt="Company Logo" 
-                    className="w-full max-w-xl object-contain opacity-100"
-                    style={{ filter: 'none', mixBlendMode: 'normal' }}
-                />
+                {config.aboutLogo ? (
+                    <img 
+                        src={config.aboutLogo} 
+                        alt="Company Logo" 
+                        className="w-full max-w-xl object-contain opacity-100"
+                        style={{ filter: 'none', mixBlendMode: 'normal' }}
+                    />
+                ) : (
+                    <div className="w-full max-w-xl aspect-square bg-gray-100 flex items-center justify-center">
+                        <span className="text-gray-400">Logo</span>
+                    </div>
+                )}
              </div>
         </div>
 

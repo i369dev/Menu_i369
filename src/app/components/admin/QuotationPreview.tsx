@@ -68,7 +68,7 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({
                 <div className="h-full flex flex-col">
                     <div className="clearfix pb-8">
                         <div className="float-left w-1/2">
-                            <img src={config.logoDark} alt="Logo" className="w-32 mb-4" />
+                            {config.logoDark && <img src={config.logoDark} alt="Logo" className="w-32 mb-4" />}
                             <div dangerouslySetInnerHTML={{ __html: headerHtml }} />
                         </div>
                         <div className="float-right w-1/2 text-right">
