@@ -1,5 +1,5 @@
 
-import { Project, CuratedItem, SiteConfig, TrustedClient } from '../types';
+import { Project, CuratedItem, SiteConfig, TrustedClient, FinishingRatesConfig } from '../types';
 import { getProjects } from './projectData';
 import { translations } from './translations';
 
@@ -28,6 +28,31 @@ export const initialCuratedItems: CuratedItem[] = [
   { id: 6, title: "Table Setting", artist: "Ambience", image: "https://images.unsplash.com/photo-1544967082-d9d25d867d66?q=80&w=1780&auto=format&fit=crop", isVisible: true },
   { id: 7, title: "Cinematic Pour", artist: "Detail", video: "https://videos.pexels.com/video-files/4114797/4114797-uhd_2560_1440_25fps.mp4", isVisible: true }
 ];
+
+export const initialFinishingRates: FinishingRatesConfig = {
+  pouchLaminating: { a4: 100, a3: 200 },
+  laminating: {
+    a4: { silky: 50, matte: 50, gloss: 50 },
+    a3: { silky: 110, matte: 110, gloss: 110 }
+  },
+  boardPrice: {
+    sunboard_single: 5,
+    sunboard_double: 7,
+    cladding_single: 7,
+    cladding_double: 9,
+    corrugated_single: 4,
+    corrugated_double: 5
+  },
+  leatherCover: {
+    a5: 700,
+    a4: 1600,
+    a3: 2000,
+    a3_third: 1000
+  },
+  binding: {
+    spiral: 300
+  }
+};
 
 const defaultQuotationHeader = `
     <div style="font-weight: bold;">Imaginative369</div>

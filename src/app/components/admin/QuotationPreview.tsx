@@ -22,10 +22,11 @@ interface QuotationPreviewProps {
     totalCost: number;
     issueDate: Date;
     expiryDate: Date;
+    finishingDetails: { description: string, cost: number, qty: number }[];
 }
 
 export const QuotationPreview: React.FC<QuotationPreviewProps> = ({ 
-    details, project, quoteId, printRate, designCost, printCost, totalCost, issueDate, expiryDate
+    details, project, quoteId, printRate, designCost, printCost, totalCost, issueDate, expiryDate, finishingDetails
 }) => {
     const { config } = useContent();
 
@@ -138,6 +139,17 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({
                                     <td className="p-2 text-right align-top">{printCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                 </tr>
                             )}
+                            {finishingDetails.map((item, index) => (
+                                <tr key={`finish-${index}`} className="border-b">
+                                    <td className="p-2 align-top">{printRate ? 3 + index : 2 + index}</td>
+                                    <td className="p-2">
+                                        <div className="font-bold">{item.description}</div>
+                                    </td>
+                                    <td className="p-2 text-right align-top">{item.qty}</td>
+                                    <td className="p-2 text-right align-top">{(item.cost / item.qty).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    <td className="p-2 text-right align-top">{item.cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                </tr>
+                            ))}
                              <tr className="border-b">
                                 <td className="p-2 align-top"></td>
                                 <td className="p-2 font-bold">FREE DELIVERY</td>

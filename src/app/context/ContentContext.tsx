@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Project, CuratedItem, Order, SiteConfig, TrustedClient, PrintRate } from '../types';
-import { initialProjects, initialCuratedItems, initialConfig, initialClients } from '../utils/defaults';
+import { Project, CuratedItem, Order, SiteConfig, TrustedClient, PrintRate, FinishingRatesConfig } from '../types';
+import { initialProjects, initialCuratedItems, initialConfig, initialClients, initialFinishingRates } from '../utils/defaults';
 import { initialPrintRates } from '../utils/printRatesData';
 import { Language } from '../utils/translations';
 import { firestore } from '@/firebase';
@@ -20,6 +20,8 @@ interface ContentContextType {
     setTrustedClients: (clients: TrustedClient[]) => Promise<void>;
     printRates: PrintRate[];
     setPrintRates: (rates: PrintRate[]) => Promise<void>;
+    finishingRates: FinishingRatesConfig;
+    setFinishingRates: (rates: FinishingRatesConfig) => Promise<void>;
     
     // Frontend Getters (Filtered by Visibility)
     getLocalizedProjects: (lang: Language) => Project[];
@@ -37,6 +39,8 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const [config, setConfigState] = useState<SiteConfig>(initialConfig);
     const [trustedClients, setTrustedClientsState] = useState<TrustedClient[]>(initialClients);
     const [printRates, setPrintRatesState] = useState<PrintRate[]>([]);
+    const [finishingRates, setFinishingRatesState] = useState<FinishingRatesConfig>(initialFinishingRates);
+
 
     useEffect(() => {
         const contentDocRef = doc(firestore, "content", "main");
@@ -51,13 +55,15 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 setOrdersState(data.orders || []);
                 setConfigState(data.config || initialConfig);
                 setTrustedClientsState(data.trustedClients || initialClients);
+                setFinishingRatesState(data.finishingRates || initialFinishingRates);
             } else {
                 // Initialize non-project content if it doesn't exist
                 saveContent({
                     curatedItems: initialCuratedItems,
                     orders: [],
                     config: initialConfig,
-                    trustedClients: initialClients
+                    trustedClients: initialClients,
+                    finishingRates: initialFinishingRates,
                 });
             }
         });
@@ -177,6 +183,10 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
     };
 
+    const setFinishingRates = async (rates: FinishingRatesConfig) => {
+        await saveContent({ finishingRates: rates });
+    };
+
     // Filter projects for frontend view (isVisible !== false)
     const getLocalizedProjects = (lang: Language) => {
         const visibleProjects = projects.filter(p => p.isVisible !== false);
@@ -239,6 +249,8 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
             setTrustedClients,
             printRates,
             setPrintRates,
+            finishingRates,
+            setFinishingRates,
             getLocalizedProjects,
             getLocalizedConfig,
             getVisibleCuratedItems,

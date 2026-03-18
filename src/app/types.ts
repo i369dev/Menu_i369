@@ -101,6 +101,31 @@ export interface PrintRate {
   price_tier5: number; // Qty > 1000
 }
 
+export interface FinishingRatesConfig {
+  pouchLaminating: { a4: number; a3: number };
+  laminating: { 
+    a4: { silky: number; matte: number; gloss: number; }; 
+    a3: { silky: number; matte: number; gloss: number; }; 
+  };
+  boardPrice: { 
+    sunboard_single: number; 
+    sunboard_double: number; 
+    cladding_single: number; 
+    cladding_double: number; 
+    corrugated_single: number; 
+    corrugated_double: number; 
+  };
+  leatherCover: { 
+    a5: number; 
+    a4: number; 
+    a3: number; 
+    a3_third: number; 
+  };
+  binding: { 
+    spiral: number; 
+  };
+}
+
 export interface SiteConfig {
   unitPriceIncrease: number; // Keep for type compatibility if needed, though unused
   // Branding Assets
