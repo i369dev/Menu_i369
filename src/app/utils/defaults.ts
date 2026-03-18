@@ -87,6 +87,7 @@ export const initialConfig: SiteConfig = {
     aboutLogo: "",
     footerLogo: "",
     whatsappIcon: "https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg",
+    quotationLogo: "",
     
     whatsappNumber: "94770000000",
     contactEmail: "projects@imaginative369.com",
@@ -147,6 +148,7 @@ export const initialConfig: SiteConfig = {
     quotationTerms: defaultQuotationTerms,
     quotationTerms_si: defaultQuotationTerms, // Placeholder, should be translated
     quotationTerms_ta: defaultQuotationTerms, // Placeholder, should be translated
+    quoteMarkupPercentage: 0,
 
     socialLinks: [
       { id: 1, platform: "Facebook", url: "#", icon: "https://cdn-icons-png.flaticon.com/512/733/733547.png", isVisible: true },

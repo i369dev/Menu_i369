@@ -60,9 +60,10 @@ const EditRateModal: React.FC<{
 
 
 export const PrintRatesManager: React.FC = () => {
-    const { printRates, setPrintRates } = useContent();
+    const { printRates, setPrintRates, config, setConfig } = useContent();
     const [editingRate, setEditingRate] = useState<PrintRate | null>(null);
     const [isCreating, setIsCreating] = useState(false);
+    const [markup, setMarkup] = useState(config.quoteMarkupPercentage || 0);
 
     const handleSave = async (rate: PrintRate) => {
         try {
@@ -93,9 +94,26 @@ export const PrintRatesManager: React.FC = () => {
         }
     };
 
+    const handleMarkupSave = async () => {
+        await setConfig({ ...config, quoteMarkupPercentage: markup });
+        alert("Global markup updated!");
+    };
+    
+    const calculateMarkup = (price: number) => {
+        return price * (1 + markup / 100);
+    }
+
     return (
         <div className="max-w-7xl mx-auto pb-20">
-            <SectionHeader title="Print Pricing Matrix" action={<Button onClick={() => setIsCreating(true)}>+ Add Rate</Button>} />
+            <div className="flex justify-between items-center">
+                <SectionHeader title="Print Pricing Matrix" action={<Button onClick={() => setIsCreating(true)}>+ Add Rate</Button>} />
+                <div className="flex gap-2 items-center mb-6 pb-4">
+                    <InputGroup label="Global Markup (%)">
+                       <TextInput type="number" value={markup} onChange={e => setMarkup(parseFloat(e.target.value) || 0)} className="w-32" />
+                    </InputGroup>
+                     <Button onClick={handleMarkupSave} variant="secondary" className="self-end mb-5">Save Markup</Button>
+                </div>
+            </div>
             <Card className="p-0 overflow-x-auto">
                 <table className="w-full text-left text-sm whitespace-nowrap">
                     <thead className="bg-gray-100 font-bold text-xs text-gray-600 uppercase">
@@ -119,11 +137,12 @@ export const PrintRatesManager: React.FC = () => {
                                 <td className="p-3">{rate.paperType}</td>
                                 <td className="p-3">{rate.weight}</td>
                                 <td className="p-3">{rate.sides}</td>
-                                <td className="p-3 text-right font-mono">{rate.price_tier1.toFixed(2)}</td>
-                                <td className="p-3 text-right font-mono">{rate.price_tier2.toFixed(2)}</td>
-                                <td className="p-3 text-right font-mono">{rate.price_tier3.toFixed(2)}</td>
-                                <td className="p-3 text-right font-mono">{rate.price_tier4.toFixed(2)}</td>
-                                <td className="p-3 text-right font-mono">{rate.price_tier5.toFixed(2)}</td>
+                                {[rate.price_tier1, rate.price_tier2, rate.price_tier3, rate.price_tier4, rate.price_tier5].map((price, i) => (
+                                    <td key={i} className="p-3 text-right font-mono">
+                                        <div className="font-semibold">{calculateMarkup(price).toFixed(2)}</div>
+                                        <div className="text-xs text-gray-400">({price.toFixed(2)})</div>
+                                    </td>
+                                ))}
                                 <td className="p-3 text-right">
                                     <div className="flex gap-2 justify-end">
                                         <Button variant="secondary" className="text-xs px-2 py-1" onClick={() => setEditingRate(rate)}>Edit</Button>

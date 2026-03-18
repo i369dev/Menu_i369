@@ -1,19 +1,33 @@
 
 import { useState } from 'react';
 import { useContent } from '../../../context/ContentContext';
-import { Card, SectionHeader, InputGroup, Button, TextArea, LangTabs } from '../ui/AdminShared';
+import { Card, SectionHeader, InputGroup, Button, TextArea, LangTabs, FileUpload } from '../ui/AdminShared';
+import { uploadFileToStorage } from '@/app/utils/storage';
 
 export const QuotationTemplateManager: React.FC = () => {
     const { config, setConfig } = useContent();
     const [localConfig, setLocalConfig] = useState(config);
     const [lang, setLang] = useState<'en'|'si'|'ta'>('en');
+    const [logoFile, setLogoFile] = useState<File | null>(null);
 
-    const handleSave = () => {
-        setConfig(localConfig);
+    const handleSave = async () => {
+        let updatedConfig = { ...localConfig };
+        if (logoFile) {
+            try {
+                const path = `config/${Date.now()}_quotation_logo`;
+                updatedConfig.quotationLogo = await uploadFileToStorage(logoFile, path);
+            } catch (error) {
+                alert("Logo upload failed.");
+                return;
+            }
+        }
+        await setConfig(updatedConfig);
+        setLocalConfig(prev => ({...prev, ...updatedConfig}));
+        setLogoFile(null);
         alert('Quotation template updated!');
     };
 
-    const isDirty = JSON.stringify(localConfig) !== JSON.stringify(config);
+    const isDirty = JSON.stringify(localConfig) !== JSON.stringify(config) || logoFile !== null;
 
     const getHeader = () => {
         if (lang === 'si') return localConfig.quotationHeader_si || '';
@@ -48,9 +62,18 @@ export const QuotationTemplateManager: React.FC = () => {
                     Placeholders like <code>{'{{whatsappNumber}}'}</code> and <code>{'{{contactEmail}}'}</code> will be replaced with values from Company Settings.
                 </p>
 
-                <LangTabs active={lang} onChange={setLang} />
-
                 <div className="space-y-8 mt-4">
+                    <FileUpload 
+                        label="Quotation Logo" 
+                        previewUrl={logoFile ? URL.createObjectURL(logoFile) : localConfig.quotationLogo} 
+                        onFileSelect={setLogoFile}
+                        onClear={() => setLocalConfig({...localConfig, quotationLogo: ''})}
+                    />
+                    
+                    <hr />
+                    
+                    <LangTabs active={lang} onChange={setLang} />
+
                     <InputGroup 
                         label="Quotation Header"
                         subLabel="This appears at the top left of the quote. Contains your company contact info."

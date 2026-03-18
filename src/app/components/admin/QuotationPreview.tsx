@@ -39,13 +39,16 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({
 
     const headerHtml = interpolate(config.quotationHeader || '');
     const termsHtml = interpolate(config.quotationTerms || '');
+    const logoSrc = config.quotationLogo || config.logoDark;
+
 
     const getPriceForQuantity = (rate: PrintRate, quantity: number): number => {
-        if (quantity < 51) return rate.price_tier1;
-        if (quantity < 101) return rate.price_tier2;
-        if (quantity < 501) return rate.price_tier3;
-        if (quantity < 1001) return rate.price_tier4;
-        return rate.price_tier5;
+        const markup = 1 + ((config.quoteMarkupPercentage || 0) / 100);
+        if (quantity < 51) return rate.price_tier1 * markup;
+        if (quantity < 101) return rate.price_tier2 * markup;
+        if (quantity < 501) return rate.price_tier3 * markup;
+        if (quantity < 1001) return rate.price_tier4 * markup;
+        return rate.price_tier5 * markup;
     };
     
     const Page: React.FC<{ children: React.ReactNode, isLast?: boolean }> = ({ children, isLast }) => (
@@ -69,7 +72,7 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({
                 <div className="h-full flex flex-col">
                     <div className="clearfix pb-8">
                         <div className="float-left w-1/2">
-                            {config.logoDark && <img src={config.logoDark} alt="Logo" className="w-32 mb-4" />}
+                            {logoSrc && <img src={logoSrc} alt="Logo" className="w-32 mb-4" />}
                             <div dangerouslySetInnerHTML={{ __html: headerHtml }} />
                         </div>
                         <div className="float-right w-1/2 text-right">

@@ -135,6 +135,7 @@ export interface SiteConfig {
   aboutLogo: string;
   footerLogo: string;
   whatsappIcon: string;
+  quotationLogo?: string;
   
   // Contact & Social
   whatsappNumber: string;
@@ -194,6 +195,7 @@ export interface SiteConfig {
   quotationTerms: string;
   quotationTerms_si?: string;
   quotationTerms_ta?: string;
+  quoteMarkupPercentage?: number;
 
   // Team
   teamMembers: TeamMember[];

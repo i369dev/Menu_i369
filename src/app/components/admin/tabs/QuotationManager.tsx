@@ -12,16 +12,17 @@ import { Calendar } from '@/components/ui/calendar';
 import { format, addDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 
-const getPriceForQuantity = (rate: PrintRate, quantity: number): number => {
-    if (quantity < 51) return rate.price_tier1;
-    if (quantity < 101) return rate.price_tier2;
-    if (quantity < 501) return rate.price_tier3;
-    if (quantity < 1001) return rate.price_tier4;
-    return rate.price_tier5;
+const getPriceForQuantity = (rate: PrintRate, quantity: number, markup: number): number => {
+    const finalMarkup = 1 + (markup / 100);
+    if (quantity < 51) return rate.price_tier1 * finalMarkup;
+    if (quantity < 101) return rate.price_tier2 * finalMarkup;
+    if (quantity < 501) return rate.price_tier3 * finalMarkup;
+    if (quantity < 1001) return rate.price_tier4 * finalMarkup;
+    return rate.price_tier5 * finalMarkup;
 };
 
 export const QuotationManager: React.FC = () => {
-    const { projects, printRates, orders, finishingRates } = useContent();
+    const { projects, printRates, orders, finishingRates, config } = useContent();
     const [quoteId, setQuoteId] = useState('');
     const [issueDate, setIssueDate] = useState(new Date());
     const [expiryDate, setExpiryDate] = useState<Date | undefined>(addDays(new Date(), 7));
@@ -103,7 +104,8 @@ export const QuotationManager: React.FC = () => {
     };
 
     const { designCost, printCost, selectedPrintRate, finishingCost, finishingDetails } = useMemo(() => {
-        const designCost = selectedProject?.pricing?.designOnly || 0;
+        const designCost = selectedProject?.pricing?.designOnly || 0; // Markup does not apply to design cost as per reqs
+        const markup = config.quoteMarkupPercentage || 0;
         
         const rate = printRates.find(r => 
             r.inkCoverage === printSpec.inkCoverage &&
@@ -111,19 +113,20 @@ export const QuotationManager: React.FC = () => {
             r.weight === printSpec.weight &&
             r.sides === printSpec.sides
         );
-        const printCost = rate ? getPriceForQuantity(rate, details.quantity) * details.quantity : 0;
+        const printCost = rate ? getPriceForQuantity(rate, details.quantity, markup) * details.quantity : 0;
         
         let totalFinishingCost = 0;
         const finishingItems: { description: string, cost: number, qty: number }[] = [];
+        const finalMarkup = 1 + (markup / 100);
 
         if (finishing.pouchLaminating !== 'none') {
-            const cost = finishingRates.pouchLaminating[finishing.pouchLaminating] * details.quantity;
+            const cost = finishingRates.pouchLaminating[finishing.pouchLaminating] * finalMarkup * details.quantity;
             totalFinishingCost += cost;
             finishingItems.push({ description: `Pouch Laminating (${finishing.pouchLaminating.toUpperCase()})`, cost, qty: details.quantity });
         }
 
         if (finishing.laminating !== 'none' && showLaminatingOptions) {
-            const cost = finishingRates.laminating[finishing.laminatingSize][finishing.laminating] * details.quantity;
+            const cost = finishingRates.laminating[finishing.laminatingSize][finishing.laminating] * finalMarkup * details.quantity;
             totalFinishingCost += cost;
             finishingItems.push({ description: `${finishing.laminating.charAt(0).toUpperCase() + finishing.laminating.slice(1)} Laminating (${finishing.laminatingSize.toUpperCase()})`, cost, qty: details.quantity });
         }
@@ -139,26 +142,26 @@ export const QuotationManager: React.FC = () => {
             if (!isNaN(widthIn) && !isNaN(heightIn) && widthIn > 0 && heightIn > 0) {
                 const area = widthIn * heightIn;
                 const ratePerSqIn = finishingRates.boardPrice[finishing.board as keyof typeof finishingRates.boardPrice];
-                const cost = area * ratePerSqIn * details.quantity;
+                const cost = area * ratePerSqIn * finalMarkup * details.quantity;
                 totalFinishingCost += cost;
                 finishingItems.push({ description: `${finishing.board.replace(/_/g, ' ').replace(/(^\w{1})|(\s+\w{1})/g, l => l.toUpperCase())} Board`, cost, qty: details.quantity });
             }
         }
         
         if (finishing.leatherCover !== 'none') {
-            const cost = finishingRates.leatherCover[finishing.leatherCover] * details.quantity;
+            const cost = finishingRates.leatherCover[finishing.leatherCover] * finalMarkup * details.quantity;
             totalFinishingCost += cost;
             finishingItems.push({ description: `Leather Cover (${finishing.leatherCover.toUpperCase().replace('_THIRD', ' 1/3')})`, cost, qty: details.quantity });
         }
 
         if (finishing.binding !== 'none') {
-            const cost = finishingRates.binding[finishing.binding] * details.quantity;
+            const cost = finishingRates.binding[finishing.binding] * finalMarkup * details.quantity;
             totalFinishingCost += cost;
             finishingItems.push({ description: `Spiral Binding`, cost, qty: details.quantity });
         }
 
         return { designCost, printCost, selectedPrintRate: rate || null, finishingCost: totalFinishingCost, finishingDetails: finishingItems };
-    }, [selectedProject, printRates, printSpec, details.quantity, finishing, finishingRates, showLaminatingOptions, showBoardOptions]);
+    }, [selectedProject, printRates, printSpec, details.quantity, finishing, finishingRates, showLaminatingOptions, showBoardOptions, config.quoteMarkupPercentage]);
 
     const totalCost = designCost + printCost + finishingCost;
 
