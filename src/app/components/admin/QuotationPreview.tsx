@@ -97,7 +97,7 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({
 
                     <div className="pb-8">
                         <div className="font-bold text-gray-500 mb-1">Subject</div>
-                        <p>Menu Design, Printing & Delivery Service - {details.business} - {details.quantity} {project?.title} menu cards</p>
+                        <p>{project?.title ? `Menu Design, Printing & Delivery Service - ${details.business} - ${details.quantity} ${project?.title} menu cards` : 'Quotation'}</p>
                     </div>
 
                     <table className="w-full border-collapse">
@@ -111,23 +111,25 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({
                             </tr>
                         </thead>
                         <tbody>
-                            <tr className="border-b">
-                                <td className="p-2 align-top">1</td>
-                                <td className="p-2">
-                                    <div className="font-bold">{project?.title} Menu Design (Both Sides)</div>
-                                    <ul className="list-disc pl-5 text-gray-600">
-                                        <li>User Generate Images or Stock Images</li>
-                                        <li>Design Delivery: 1 - 2 Days</li>
-                                        <li>Flexible Revisions</li>
-                                    </ul>
-                                </td>
-                                <td className="p-2 text-right align-top">1.00</td>
-                                <td className="p-2 text-right align-top">{designCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                <td className="p-2 text-right align-top">{designCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                            </tr>
+                            {project && (
+                                <tr className="border-b">
+                                    <td className="p-2 align-top">1</td>
+                                    <td className="p-2">
+                                        <div className="font-bold">{project?.title} Menu Design (Both Sides)</div>
+                                        <ul className="list-disc pl-5 text-gray-600">
+                                            <li>User Generate Images or Stock Images</li>
+                                            <li>Design Delivery: 1 - 2 Days</li>
+                                            <li>Flexible Revisions</li>
+                                        </ul>
+                                    </td>
+                                    <td className="p-2 text-right align-top">1.00</td>
+                                    <td className="p-2 text-right align-top">{designCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    <td className="p-2 text-right align-top">{designCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                </tr>
+                            )}
                             {printRate && (
                                 <tr className="border-b">
-                                    <td className="p-2 align-top">2</td>
+                                    <td className="p-2 align-top">{project ? 2 : 1}</td>
                                     <td className="p-2">
                                         <div className="font-bold">{project?.title} Menu Print</div>
                                         <ul className="list-disc pl-5 text-gray-600">
@@ -144,7 +146,7 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({
                             )}
                             {finishingDetails.map((item, index) => (
                                 <tr key={`finish-${index}`} className="border-b">
-                                    <td className="p-2 align-top">{printRate ? 3 + index : 2 + index}</td>
+                                    <td className="p-2 align-top">{(project ? 1 : 0) + (printRate ? 1 : 0) + 1 + index}</td>
                                     <td className="p-2">
                                         <div className="font-bold">{item.description}</div>
                                     </td>

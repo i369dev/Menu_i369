@@ -29,13 +29,13 @@ export const QuotationManager: React.FC = () => {
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
     const [details, setDetails] = useState({
-        name: 'Mr Tharindu',
-        mobile: '071 7075 724',
-        business: 'Home Made Kitchen',
-        address: '665 a nugape pamunugama Bopitiya ja ela',
+        name: '',
+        mobile: '',
+        business: '',
+        address: '',
         note: 'Thank you for choosing Imaginative369!\nWe can\'t wait to bring your vision to life!',
-        projectId: projects[0]?.id || null,
-        quantity: 10,
+        projectId: null as number | null,
+        quantity: '' as number | '',
     });
 
     const [printSpec, setPrintSpec] = useState({
@@ -61,15 +61,6 @@ export const QuotationManager: React.FC = () => {
         const nextQuoteNumber = (orders ? orders.length + 1 : 1).toString().padStart(6, '0');
         const newId = `QT-${nextQuoteNumber}`;
         setQuoteId(newId);
-        if (printRates.length > 0 && !printSpec.inkCoverage) {
-            const firstRate = printRates[0];
-            setPrintSpec({
-                inkCoverage: firstRate.inkCoverage,
-                paperType: firstRate.paperType,
-                weight: firstRate.weight,
-                sides: firstRate.sides
-            });
-        }
     }, [printRates, orders]);
 
     const selectedProject = useMemo(() => {
@@ -104,7 +95,8 @@ export const QuotationManager: React.FC = () => {
     };
 
     const { designCost, printCost, selectedPrintRate, finishingCost, finishingDetails } = useMemo(() => {
-        const designCost = selectedProject?.pricing?.designOnly || 0; // Markup does not apply to design cost as per reqs
+        const quantity = Number(details.quantity) || 0;
+        const designCost = selectedProject?.pricing?.designOnly || 0;
         const markup = config.quoteMarkupPercentage || 0;
         
         const rate = printRates.find(r => 
@@ -113,22 +105,22 @@ export const QuotationManager: React.FC = () => {
             r.weight === printSpec.weight &&
             r.sides === printSpec.sides
         );
-        const printCost = rate ? getPriceForQuantity(rate, details.quantity, markup) * details.quantity : 0;
+        const printCost = rate ? getPriceForQuantity(rate, quantity, markup) * quantity : 0;
         
         let totalFinishingCost = 0;
         const finishingItems: { description: string, cost: number, qty: number }[] = [];
         const finalMarkup = 1 + (markup / 100);
 
         if (finishing.pouchLaminating !== 'none') {
-            const cost = finishingRates.pouchLaminating[finishing.pouchLaminating] * finalMarkup * details.quantity;
+            const cost = finishingRates.pouchLaminating[finishing.pouchLaminating] * finalMarkup * quantity;
             totalFinishingCost += cost;
-            finishingItems.push({ description: `Pouch Laminating (${finishing.pouchLaminating.toUpperCase()})`, cost, qty: details.quantity });
+            finishingItems.push({ description: `Pouch Laminating (${finishing.pouchLaminating.toUpperCase()})`, cost, qty: quantity });
         }
 
         if (finishing.laminating !== 'none' && showLaminatingOptions) {
-            const cost = finishingRates.laminating[finishing.laminatingSize][finishing.laminating] * finalMarkup * details.quantity;
+            const cost = finishingRates.laminating[finishing.laminatingSize][finishing.laminating] * finalMarkup * quantity;
             totalFinishingCost += cost;
-            finishingItems.push({ description: `${finishing.laminating.charAt(0).toUpperCase() + finishing.laminating.slice(1)} Laminating (${finishing.laminatingSize.toUpperCase()})`, cost, qty: details.quantity });
+            finishingItems.push({ description: `${finishing.laminating.charAt(0).toUpperCase() + finishing.laminating.slice(1)} Laminating (${finishing.laminatingSize.toUpperCase()})`, cost, qty: quantity });
         }
 
         if (finishing.board !== 'none' && showBoardOptions) {
@@ -142,22 +134,22 @@ export const QuotationManager: React.FC = () => {
             if (!isNaN(widthIn) && !isNaN(heightIn) && widthIn > 0 && heightIn > 0) {
                 const area = widthIn * heightIn;
                 const ratePerSqIn = finishingRates.boardPrice[finishing.board as keyof typeof finishingRates.boardPrice];
-                const cost = area * ratePerSqIn * finalMarkup * details.quantity;
+                const cost = area * ratePerSqIn * finalMarkup * quantity;
                 totalFinishingCost += cost;
-                finishingItems.push({ description: `${finishing.board.replace(/_/g, ' ').replace(/(^\w{1})|(\s+\w{1})/g, l => l.toUpperCase())} Board`, cost, qty: details.quantity });
+                finishingItems.push({ description: `${finishing.board.replace(/_/g, ' ').replace(/(^\w{1})|(\s+\w{1})/g, l => l.toUpperCase())} Board`, cost, qty: quantity });
             }
         }
         
         if (finishing.leatherCover !== 'none') {
-            const cost = finishingRates.leatherCover[finishing.leatherCover] * finalMarkup * details.quantity;
+            const cost = finishingRates.leatherCover[finishing.leatherCover] * finalMarkup * quantity;
             totalFinishingCost += cost;
-            finishingItems.push({ description: `Leather Cover (${finishing.leatherCover.toUpperCase().replace('_THIRD', ' 1/3')})`, cost, qty: details.quantity });
+            finishingItems.push({ description: `Leather Cover (${finishing.leatherCover.toUpperCase().replace('_THIRD', ' 1/3')})`, cost, qty: quantity });
         }
 
         if (finishing.binding !== 'none') {
-            const cost = finishingRates.binding[finishing.binding] * finalMarkup * details.quantity;
+            const cost = finishingRates.binding[finishing.binding] * finalMarkup * quantity;
             totalFinishingCost += cost;
-            finishingItems.push({ description: `Spiral Binding`, cost, qty: details.quantity });
+            finishingItems.push({ description: `Spiral Binding`, cost, qty: quantity });
         }
 
         return { designCost, printCost, selectedPrintRate: rate || null, finishingCost: totalFinishingCost, finishingDetails: finishingItems };
@@ -165,7 +157,7 @@ export const QuotationManager: React.FC = () => {
 
     const totalCost = designCost + printCost + finishingCost;
 
-    const handleDetailChange = (field: keyof typeof details, value: string | number) => {
+    const handleDetailChange = (field: keyof typeof details, value: string | number | null) => {
         setDetails(prev => ({ ...prev, [field]: value }));
     };
     
@@ -193,8 +185,6 @@ export const QuotationManager: React.FC = () => {
                 <Card className="sticky top-6">
                     <SectionHeader title="Create Quotation" />
                     <div className="space-y-4">
-                        <InputGroup label="Select Project"><Select value={details.projectId || ''} onChange={e => handleDetailChange('projectId', Number(e.target.value))}>{projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</Select></InputGroup>
-                        <hr />
                         <InputGroup label="Client Name"><TextInput value={details.name} onChange={e => handleDetailChange('name', e.target.value)} /></InputGroup>
                         <InputGroup label="Mobile Number"><TextInput value={details.mobile} onChange={e => handleDetailChange('mobile', e.target.value)} /></InputGroup>
                         <InputGroup label="Business / Hotel"><TextInput value={details.business} onChange={e => handleDetailChange('business', e.target.value)} /></InputGroup>
@@ -214,7 +204,15 @@ export const QuotationManager: React.FC = () => {
                                 </Popover>
                             </InputGroup>
                         </div>
+                        
+                        <InputGroup label="Select Project">
+                            <Select value={details.projectId || ''} onChange={e => handleDetailChange('projectId', Number(e.target.value) || null)}>
+                                <option value="">Select a Project...</option>
+                                {projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+                            </Select>
+                        </InputGroup>
                         <hr />
+
                         <h4 className="font-bold text-sm">Print Specifications</h4>
                         <InputGroup label="Ink Coverage"><Select value={printSpec.inkCoverage} onChange={e => handleSpecChange('inkCoverage', e.target.value)}><option value="">Select...</option>{specOptions.inks.map(o => <option key={o} value={o}>{o}</option>)}</Select></InputGroup>
                         <InputGroup label="Paper Type"><Select value={printSpec.paperType} onChange={e => handleSpecChange('paperType', e.target.value)} disabled={!printSpec.inkCoverage}><option value="">Select...</option>{specOptions.papers.map(o => <option key={o} value={o}>{o}</option>)}</Select></InputGroup>
@@ -268,7 +266,7 @@ export const QuotationManager: React.FC = () => {
             <div className="xl:col-span-2">
                 <div ref={previewRef} className="max-h-[calc(100vh-6rem)] overflow-y-auto bg-gray-200 p-8 shadow-inner rounded-lg" style={{ '--scrollbar-bg': 'rgba(128, 128, 128, 0.4)' } as React.CSSProperties}>
                     <QuotationPreview 
-                        details={details}
+                        details={{...details, quantity: Number(details.quantity) || 0 }}
                         project={selectedProject}
                         quoteId={quoteId}
                         printRate={selectedPrintRate}
