@@ -24,7 +24,7 @@ const getPriceForQuantity = (rate: PrintRate, quantity: number, markup: number):
 };
 
 export const QuotationManager: React.FC = () => {
-    const { projects, printRates, orders, finishingRates, config, addQuotation } = useContent();
+    const { projects, printRates, orders, quotations, finishingRates, config, addQuotation } = useContent();
     
     const [quoteId, setQuoteId] = useState('');
     const [isSaving, setIsSaving] = useState(false);
@@ -40,15 +40,22 @@ export const QuotationManager: React.FC = () => {
     });
 
     const [items, setItems] = useState<QuotationItem[]>([]);
-    const [currentItem, setCurrentItem] = useState<Partial<QuotationItem>>({});
+    const [currentItem, setCurrentItem] = useState<Partial<QuotationItem>>({
+        projectId: undefined,
+        quantity: '',
+        printSpec: null,
+        finishing: null
+    });
 
     const previewRef = useRef<HTMLDivElement>(null);
 
      useEffect(() => {
-        const nextQuoteNumber = (orders ? orders.length + 1 : 1).toString().padStart(6, '0');
-        const newId = `QT-${nextQuoteNumber}`;
-        setQuoteId(newId);
-    }, [printRates, orders]);
+        if (quotations && orders) {
+            const nextQuoteNumber = (orders.length + quotations.length + 1).toString().padStart(6, '0');
+            const newId = `QT-${nextQuoteNumber}`;
+            setQuoteId(newId);
+        }
+    }, [quotations, orders]);
 
     const handleAddItem = () => {
         if (!currentItem.projectId) {
@@ -56,32 +63,40 @@ export const QuotationManager: React.FC = () => {
             return;
         }
         setItems(prev => [...prev, currentItem as QuotationItem]);
-        setCurrentItem({}); // Reset for next item
+        setCurrentItem({
+            projectId: undefined,
+            quantity: '',
+            printSpec: null,
+            finishing: null
+        }); // Reset for next item
     };
 
     const handleRemoveItem = (index: number) => {
         setItems(prev => prev.filter((_, i) => i !== index));
     };
-    
-    const handleDownloadPdf = async () => {
-        const previewContainer = previewRef.current;
-        if (!previewContainer) { alert("Preview element not found."); return; }
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pageElements = previewContainer.querySelectorAll<HTMLDivElement>('.a4-page-container');
-        if (pageElements.length === 0) { alert("No printable pages found."); return; }
-        for (let i = 0; i < pageElements.length; i++) {
-          const page = pageElements[i];
-          if (i > 0) pdf.addPage();
-          const canvas = await html2canvas(page, { scale: 3, useCORS: true, logging: false, width: page.offsetWidth, height: page.offsetHeight });
-          const imgData = canvas.toDataURL('image/png');
-          const pdfWidth = pdf.internal.pageSize.getWidth();
-          const pdfHeight = pdf.internal.pageSize.getHeight();
-          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-        }
-        pdf.save(`Quotation-${quoteId}.pdf`);
-    };
 
     const totalCost = useMemo(() => items.reduce((acc, item) => acc + item.total, 0), [items]);
+
+    const resetForm = () => {
+        const nextQuoteNumber = ((orders?.length || 0) + (quotations?.length || 0) + 1).toString().padStart(6, '0');
+        setQuoteId(`QT-${nextQuoteNumber}`);
+        setDetails({
+            name: '',
+            mobile: '',
+            business: '',
+            address: '',
+            note: 'Thank you for choosing Imaginative369!\nWe can\'t wait to bring your vision to life!',
+            issueDate: new Date(),
+            expiryDate: addDays(new Date(), 7),
+        });
+        setItems([]);
+        setCurrentItem({
+            projectId: undefined,
+            quantity: '',
+            printSpec: null,
+            finishing: null
+        });
+    };
 
     const handleSaveQuotation = async () => {
         if (!details.name || !details.business || items.length === 0) {
@@ -106,19 +121,61 @@ export const QuotationManager: React.FC = () => {
         try {
             await addQuotation(newQuotation);
             alert('Quotation saved successfully!');
-            // Reset state
-            setDetails({
-                name: '', mobile: '', business: '', address: '', note: 'Thank you...',
-                issueDate: new Date(), expiryDate: addDays(new Date(), 7)
-            });
-            setItems([]);
-            setCurrentItem({});
+            resetForm();
         } catch (error) {
             alert('Failed to save quotation.');
             console.error(error);
         } finally {
             setIsSaving(false);
         }
+    };
+    
+    const handleDownloadPdf = async () => {
+        if (!details.name || !details.business || items.length === 0) {
+            alert('Client Name, Business, and at least one item are required to generate a PDF.');
+            return;
+        }
+        setIsSaving(true);
+
+        const newQuotation: Quotation = {
+            id: quoteId,
+            clientName: details.name,
+            businessName: details.business,
+            mobile: details.mobile,
+            address: details.address,
+            issueDate: details.issueDate.toISOString(),
+            expiryDate: details.expiryDate.toISOString(),
+            items,
+            total: totalCost,
+            note: details.note,
+            status: 'draft',
+        };
+
+        try {
+            await addQuotation(newQuotation);
+        } catch (error) {
+            alert('Failed to save quotation data. PDF not generated.');
+            console.error(error);
+            setIsSaving(false);
+            return;
+        }
+        
+        const previewContainer = previewRef.current;
+        if (!previewContainer) { alert("Preview element not found."); setIsSaving(false); return; }
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageElements = previewContainer.querySelectorAll<HTMLDivElement>('.a4-page-container');
+        if (pageElements.length === 0) { alert("No printable pages found."); setIsSaving(false); return; }
+        for (let i = 0; i < pageElements.length; i++) {
+          const page = pageElements[i];
+          if (i > 0) pdf.addPage();
+          const canvas = await html2canvas(page, { scale: 3, useCORS: true, logging: false, width: page.offsetWidth, height: page.offsetHeight });
+          const imgData = canvas.toDataURL('image/png');
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = pdf.internal.pageSize.getHeight();
+          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        }
+        pdf.save(`Quotation-${quoteId}.pdf`);
+        setIsSaving(false);
     };
 
 
@@ -150,7 +207,7 @@ export const QuotationManager: React.FC = () => {
                         <hr/>
                         
                         <CurrentItemForm projects={projects} printRates={printRates} finishingRates={finishingRates} config={config} currentItem={currentItem} setCurrentItem={setCurrentItem} />
-                        <Button onClick={handleAddItem} className="w-full" variant="secondary"><Plus className="w-4 h-4 mr-2" /> Add Item to Quote</Button>
+                        <Button onClick={handleAddItem} className="w-full" variant="secondary" disabled={!currentItem.projectId}><Plus className="w-4 h-4 mr-2" /> Add Item to Quote</Button>
 
                         <hr />
                         <h4 className="font-bold text-sm">Quotation Items</h4>
@@ -177,7 +234,7 @@ export const QuotationManager: React.FC = () => {
                                  <span>Rs. {totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                              </div>
                              <Button onClick={handleSaveQuotation} className="w-full" variant="primary" disabled={isSaving}>{isSaving ? 'Saving...' : 'Save Quotation'}</Button>
-                             <Button onClick={handleDownloadPdf} className="w-full" variant="success">Download as PDF</Button>
+                             <Button onClick={handleDownloadPdf} className="w-full" variant="success" disabled={isSaving}>{isSaving ? 'Processing...' : 'Download as PDF'}</Button>
                         </div>
                     </div>
                 </Card>
@@ -307,7 +364,7 @@ const CurrentItemForm: React.FC<{
         <div className="space-y-4 p-4 border border-dashed rounded-lg">
             <h4 className="font-bold text-sm">Add New Quote Item</h4>
             <InputGroup label="Select Project">
-                <Select value={projectId || ''} onChange={e => setCurrentItem({ projectId: Number(e.target.value) || undefined })}>
+                <Select value={projectId || ''} onChange={e => setCurrentItem({ projectId: Number(e.target.value) || undefined, quantity: '', printSpec: null, finishing: null })}>
                     <option value="">Select a Project...</option>
                     {projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
                 </Select>
@@ -366,5 +423,3 @@ const CurrentItemForm: React.FC<{
         </div>
     );
 };
-
-    

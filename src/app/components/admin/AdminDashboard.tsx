@@ -16,12 +16,13 @@ import { useAuth } from '@/context/AuthContext';
 import { LoginView } from './LoginView';
 import { UserManager } from './tabs/UserManager';
 import { Card } from './ui/AdminShared';
+import { QuotationHistory } from './tabs/QuotationHistory';
 
 interface AdminDashboardProps {
     onExit: () => void;
 }
 
-const ALL_TABS = ['Analytics', 'Projects', 'Quote Generator', 'Quote Template', 'Print Rates', 'Finishing Rates', 'Curation', 'About', 'Trusted By', 'Settings', 'Users & Roles', 'Orders'] as const;
+const ALL_TABS = ['Analytics', 'Projects', 'Quote Generator', 'Quotation History', 'Quote Template', 'Print Rates', 'Finishing Rates', 'Curation', 'About', 'Trusted By', 'Settings', 'Users & Roles', 'Orders'] as const;
 type Tab = typeof ALL_TABS[number];
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit }) => {
@@ -69,6 +70,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit }) => {
             case 'Analytics': return <AnalyticsManager />;
             case 'Projects': return <ProjectManager />;
             case 'Quote Generator': return <QuotationManager />;
+            case 'Quotation History': return <QuotationHistory />;
             case 'Quote Template': return <QuotationTemplateManager />;
             case 'Print Rates': return <PrintRatesManager />;
             case 'Finishing Rates': return <FinishingRatesManager />;

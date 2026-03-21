@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Project, CuratedItem, Order, SiteConfig, TrustedClient, PrintRate, FinishingRatesConfig } from '../types';
+import { Project, CuratedItem, Order, SiteConfig, TrustedClient, PrintRate, FinishingRatesConfig, Quotation } from '../types';
 import { initialProjects, initialCuratedItems, initialConfig, initialClients, initialFinishingRates } from '../utils/defaults';
 import { initialPrintRates } from '../utils/printRatesData';
 import { Language } from '../utils/translations';
@@ -22,6 +22,8 @@ interface ContentContextType {
     setPrintRates: (rates: PrintRate[]) => Promise<void>;
     finishingRates: FinishingRatesConfig;
     setFinishingRates: (rates: FinishingRatesConfig) => Promise<void>;
+    quotations: Quotation[];
+    addQuotation: (quotation: Quotation) => Promise<void>;
     
     // Frontend Getters (Filtered by Visibility)
     getLocalizedProjects: (lang: Language) => Project[];
@@ -40,12 +42,14 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const [trustedClients, setTrustedClientsState] = useState<TrustedClient[]>(initialClients);
     const [printRates, setPrintRatesState] = useState<PrintRate[]>([]);
     const [finishingRates, setFinishingRatesState] = useState<FinishingRatesConfig>(initialFinishingRates);
+    const [quotations, setQuotationsState] = useState<Quotation[]>([]);
 
 
     useEffect(() => {
         const contentDocRef = doc(firestore, "content", "main");
         const projectsColRef = collection(firestore, "projects");
         const printRatesColRef = collection(firestore, "printRates");
+        const quotationsColRef = collection(firestore, "quotations");
 
         // Listener for config, orders, etc. from the single doc
         const unsubContent = onSnapshot(contentDocRef, (doc) => {
@@ -107,12 +111,19 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 setPrintRatesState(ratesData);
             }
         });
+        
+        // Listener for quotations collection
+        const unsubQuotations = onSnapshot(quotationsColRef, (snapshot) => {
+            const quotationsData = snapshot.docs.map(doc => doc.data() as Quotation).sort((a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime());
+            setQuotationsState(quotationsData);
+        });
 
 
         return () => {
             unsubContent();
             unsubProjects();
             unsubPrintRates();
+            unsubQuotations();
         };
     }, []);
 
@@ -187,6 +198,11 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         await saveContent({ finishingRates: rates });
     };
 
+    const addQuotation = async (quotation: Quotation) => {
+        const quotationDocRef = doc(firestore, "quotations", quotation.id);
+        await setDoc(quotationDocRef, quotation);
+    };
+
     // Filter projects for frontend view (isVisible !== false)
     const getLocalizedProjects = (lang: Language) => {
         const visibleProjects = projects.filter(p => p.isVisible !== false);
@@ -251,6 +267,8 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
             setPrintRates,
             finishingRates,
             setFinishingRates,
+            quotations,
+            addQuotation,
             getLocalizedProjects,
             getLocalizedConfig,
             getVisibleCuratedItems,
