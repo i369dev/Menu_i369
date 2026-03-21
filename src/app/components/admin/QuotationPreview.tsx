@@ -2,7 +2,7 @@
 import React from 'react';
 import { Project, PrintRate } from '../../types';
 import { useContent } from '../../context/ContentContext';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 
 interface QuotationPreviewProps {
     details: {
@@ -84,20 +84,20 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({
                     <div className="clearfix pb-8">
                         <div className="float-left w-1/2">
                             <div className="font-bold text-gray-500 mb-1">Bill To</div>
-                            <div className="font-bold text-base">{details.name}</div>
-                            <div className="whitespace-pre-line">{details.address}</div>
+                            <div className="font-bold text-base">{details?.name}</div>
+                            <div className="whitespace-pre-line">{details?.address}</div>
                         </div>
                         <div className="float-right w-1/2 text-right">
                              <div className="inline-grid grid-cols-[auto,auto] gap-x-4 gap-y-1">
-                                <span className="font-bold text-right">Date of Issue :</span><span>{format(issueDate, 'dd MMM yyyy')}</span>
-                                <span className="font-bold text-right">Expiry Date :</span><span>{format(expiryDate, 'dd MMM yyyy')}</span>
+                                <span className="font-bold text-right">Date of Issue :</span><span>{isValid(issueDate) ? format(issueDate, 'dd MMM yyyy') : ''}</span>
+                                <span className="font-bold text-right">Expiry Date :</span><span>{isValid(expiryDate) ? format(expiryDate, 'dd MMM yyyy') : ''}</span>
                             </div>
                         </div>
                     </div>
 
                     <div className="pb-8">
                         <div className="font-bold text-gray-500 mb-1">Subject</div>
-                        <p>{project?.title ? `Menu Design, Printing & Delivery Service - ${details.business} - ${details.quantity} ${project?.title} menu cards` : 'Quotation'}</p>
+                        <p>{project?.title ? `Menu Design, Printing & Delivery Service - ${details?.business} - ${details?.quantity} ${project?.title} menu cards` : 'Quotation'}</p>
                     </div>
 
                     <table className="w-full border-collapse">
@@ -123,8 +123,8 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({
                                         </ul>
                                     </td>
                                     <td className="p-2 text-right align-top">1.00</td>
-                                    <td className="p-2 text-right align-top">{designCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                    <td className="p-2 text-right align-top">{designCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    <td className="p-2 text-right align-top">{(designCost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    <td className="p-2 text-right align-top">{(designCost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                 </tr>
                             )}
                             {printRate && (
@@ -139,19 +139,19 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({
                                             <li>Ink: {printRate.inkCoverage}</li>
                                         </ul>
                                     </td>
-                                    <td className="p-2 text-right align-top">{details.quantity}</td>
-                                    <td className="p-2 text-right align-top">{getPriceForQuantity(printRate, details.quantity).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                    <td className="p-2 text-right align-top">{printCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    <td className="p-2 text-right align-top">{details?.quantity}</td>
+                                    <td className="p-2 text-right align-top">{(printRate && details) ? getPriceForQuantity(printRate, details.quantity).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</td>
+                                    <td className="p-2 text-right align-top">{(printCost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                 </tr>
                             )}
-                            {finishingDetails.map((item, index) => (
+                            {(finishingDetails || []).map((item, index) => (
                                 <tr key={`finish-${index}`} className="border-b">
                                     <td className="p-2 align-top">{(project ? 1 : 0) + (printRate ? 1 : 0) + 1 + index}</td>
                                     <td className="p-2">
                                         <div className="font-bold">{item.description}</div>
                                     </td>
                                     <td className="p-2 text-right align-top">{item.qty}</td>
-                                    <td className="p-2 text-right align-top">{(item.cost / item.qty).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    <td className="p-2 text-right align-top">{(item.cost && item.qty) ? (item.cost / item.qty).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</td>
                                     <td className="p-2 text-right align-top">{item.cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                 </tr>
                             ))}
@@ -170,18 +170,18 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({
                              <div className="float-right w-1/2">
                                 <div className="flex justify-between p-2">
                                     <span>Sub Total</span>
-                                    <span>{totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    <span>{(totalCost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 </div>
                                 <div className="flex justify-between p-2 bg-gray-100 font-bold text-base">
                                     <span>Total</span>
-                                    <span>LKR {totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    <span>LKR {(totalCost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 </div>
                             </div>
                         </div>
 
                         <div className="mt-8">
                             <div className="font-bold mb-2">Notes</div>
-                            <p className="whitespace-pre-line text-gray-600">{details.note}</p>
+                            <p className="whitespace-pre-line text-gray-600">{details?.note}</p>
                         </div>
                     </div>
                 </div>
