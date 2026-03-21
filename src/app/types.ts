@@ -1,4 +1,5 @@
 
+
 export type Page = 'work' | 'about' | 'curation' | 'contact' | 'admin';
 
 export interface Project {
@@ -207,3 +208,47 @@ export interface AppUser {
   role: 'Super Admin' | 'Editor' | 'Sales';
   permissions: string[];
 }
+
+export interface QuotationItem {
+    projectId: number;
+    quantity: number;
+    printSpec: {
+        inkCoverage: string;
+        paperType: string;
+        weight: string;
+        sides: string;
+    } | null;
+    finishing: {
+        pouchLaminating?: 'a4' | 'a3' | 'none';
+        laminating?: 'silky' | 'matte' | 'gloss' | 'none';
+        laminatingSize?: 'a4' | 'a3';
+        board?: 'sunboard_single' | 'sunboard_double' | 'cladding_single' | 'cladding_double' | 'corrugated_single' | 'corrugated_double' | 'none';
+        boardIsCustom?: boolean;
+        boardWidth?: string;
+        boardHeight?: string;
+        boardUnit?: 'in' | 'mm';
+        leatherCover?: 'a5' | 'a4' | 'a3' | 'a3_third' | 'none';
+        binding?: 'spiral' | 'none';
+    } | null;
+    total: number;
+    designCost: number;
+    printCost: number;
+    printRateId: string | null;
+    finishingDetails: { description: string, cost: number, qty: number }[];
+}
+
+export interface Quotation {
+    id: string;
+    clientName: string;
+    businessName: string;
+    mobile: string;
+    address: string;
+    issueDate: string;
+    expiryDate: string;
+    items: QuotationItem[];
+    total: number;
+    note: string;
+    status: 'draft' | 'sent' | 'approved';
+}
+
+    

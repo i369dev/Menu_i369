@@ -1,7 +1,6 @@
 
 import React from 'react';
-import { Project, PrintRate } from '../../types';
-import { useContent } from '../../context/ContentContext';
+import { Project, PrintRate, SiteConfig, QuotationItem } from '../../types';
 import { format, isValid } from 'date-fns';
 
 interface QuotationPreviewProps {
@@ -11,24 +10,29 @@ interface QuotationPreviewProps {
         business: string;
         address: string;
         note: string;
-        projectId: number | null;
-        quantity: number;
+        issueDate: Date;
+        expiryDate: Date;
     };
-    project: Project | null;
+    items: QuotationItem[];
     quoteId: string;
-    printRate: PrintRate | null;
-    designCost: number;
-    printCost: number;
     totalCost: number;
-    issueDate: Date;
-    expiryDate: Date;
-    finishingDetails: { description: string, cost: number, qty: number }[];
+    projects: Project[];
+    printRates: PrintRate[];
+    config: SiteConfig;
 }
 
 export const QuotationPreview: React.FC<QuotationPreviewProps> = ({ 
-    details, project, quoteId, printRate, designCost, printCost, totalCost, issueDate, expiryDate, finishingDetails
+    details, items, quoteId, totalCost, projects, printRates, config
 }) => {
-    const { config } = useContent();
+    
+    const getPriceForQuantity = (rate: PrintRate, quantity: number, markup: number): number => {
+        const finalMarkup = 1 + (markup / 100);
+        if (quantity < 51) return rate.price_tier1 * finalMarkup;
+        if (quantity < 101) return rate.price_tier2 * finalMarkup;
+        if (quantity < 501) return rate.price_tier3 * finalMarkup;
+        if (quantity < 1001) return rate.price_tier4 * finalMarkup;
+        return rate.price_tier5 * finalMarkup;
+    };
 
     const interpolate = (template: string) => {
         if (!template) return '';
@@ -41,16 +45,12 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({
     const termsHtml = interpolate(config.quotationTerms || '');
     const logoSrc = config.quotationLogo || config.logoDark;
 
+    const subject = items.length > 0 
+        ? `Quotation for ${items.map(i => projects.find(p => p.id === i.projectId)?.title).join(', ')}`
+        : 'Quotation';
+        
+    let itemCounter = 0;
 
-    const getPriceForQuantity = (rate: PrintRate, quantity: number): number => {
-        const markup = 1 + ((config.quoteMarkupPercentage || 0) / 100);
-        if (quantity < 51) return rate.price_tier1 * markup;
-        if (quantity < 101) return rate.price_tier2 * markup;
-        if (quantity < 501) return rate.price_tier3 * markup;
-        if (quantity < 1001) return rate.price_tier4 * markup;
-        return rate.price_tier5 * markup;
-    };
-    
     const Page: React.FC<{ children: React.ReactNode, isLast?: boolean }> = ({ children, isLast }) => (
         <div className={`a4-page-container bg-white w-[210mm] h-[297mm] shadow-lg mx-auto font-sans text-xs text-gray-800 p-12 box-border overflow-hidden relative ${isLast ? '' : 'mb-8'}`}>
             {children}
@@ -89,15 +89,15 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({
                         </div>
                         <div className="float-right w-1/2 text-right">
                              <div className="inline-grid grid-cols-[auto,auto] gap-x-4 gap-y-1">
-                                <span className="font-bold text-right">Date of Issue :</span><span>{isValid(issueDate) ? format(issueDate, 'dd MMM yyyy') : ''}</span>
-                                <span className="font-bold text-right">Expiry Date :</span><span>{isValid(expiryDate) ? format(expiryDate, 'dd MMM yyyy') : ''}</span>
+                                <span className="font-bold text-right">Date of Issue :</span><span>{isValid(details.issueDate) ? format(details.issueDate, 'dd MMM yyyy') : ''}</span>
+                                <span className="font-bold text-right">Expiry Date :</span><span>{isValid(details.expiryDate) ? format(details.expiryDate, 'dd MMM yyyy') : ''}</span>
                             </div>
                         </div>
                     </div>
 
                     <div className="pb-8">
                         <div className="font-bold text-gray-500 mb-1">Subject</div>
-                        <p>{project?.title ? `Menu Design, Printing & Delivery Service - ${details?.business} - ${details?.quantity} ${project?.title} menu cards` : 'Quotation'}</p>
+                        <p>{subject}</p>
                     </div>
 
                     <table className="w-full border-collapse">
@@ -111,50 +111,62 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({
                             </tr>
                         </thead>
                         <tbody>
-                            {project && (
-                                <tr className="border-b">
-                                    <td className="p-2 align-top">1</td>
-                                    <td className="p-2">
-                                        <div className="font-bold">{project?.title} Menu Design (Both Sides)</div>
-                                        <ul className="list-disc pl-5 text-gray-600">
-                                            <li>User Generate Images or Stock Images</li>
-                                            <li>Design Delivery: 1 - 2 Days</li>
-                                            <li>Flexible Revisions</li>
-                                        </ul>
-                                    </td>
-                                    <td className="p-2 text-right align-top">1.00</td>
-                                    <td className="p-2 text-right align-top">{(designCost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                    <td className="p-2 text-right align-top">{(designCost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                </tr>
-                            )}
-                            {printRate && (
-                                <tr className="border-b">
-                                    <td className="p-2 align-top">{project ? 2 : 1}</td>
-                                    <td className="p-2">
-                                        <div className="font-bold">{project?.title} Menu Print</div>
-                                        <ul className="list-disc pl-5 text-gray-600">
-                                            <li>Paper: {printRate.paperType}</li>
-                                            <li>Weight: {printRate.weight} gsm</li>
-                                            <li>Sides: {printRate.sides}</li>
-                                            <li>Ink: {printRate.inkCoverage}</li>
-                                        </ul>
-                                    </td>
-                                    <td className="p-2 text-right align-top">{details?.quantity}</td>
-                                    <td className="p-2 text-right align-top">{(printRate && details) ? getPriceForQuantity(printRate, details.quantity).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</td>
-                                    <td className="p-2 text-right align-top">{(printCost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                </tr>
-                            )}
-                            {(finishingDetails || []).map((item, index) => (
-                                <tr key={`finish-${index}`} className="border-b">
-                                    <td className="p-2 align-top">{(project ? 1 : 0) + (printRate ? 1 : 0) + 1 + index}</td>
-                                    <td className="p-2">
-                                        <div className="font-bold">{item.description}</div>
-                                    </td>
-                                    <td className="p-2 text-right align-top">{item.qty}</td>
-                                    <td className="p-2 text-right align-top">{(item.cost && item.qty) ? (item.cost / item.qty).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</td>
-                                    <td className="p-2 text-right align-top">{item.cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                </tr>
-                            ))}
+                            {items.map((item, index) => {
+                                const project = projects.find(p => p.id === item.projectId);
+                                const printRate = printRates.find(r => r.id === item.printRateId);
+                                const markup = config.quoteMarkupPercentage || 0;
+                                const printRatePrice = printRate ? getPriceForQuantity(printRate, item.quantity, markup) : 0;
+                                
+                                const designRow = project && item.designCost > 0 ? (
+                                    <tr className="border-b">
+                                        <td className="p-2 align-top">{++itemCounter}</td>
+                                        <td className="p-2">
+                                            <div className="font-bold">{project.title} Menu Design (Both Sides)</div>
+                                        </td>
+                                        <td className="p-2 text-right align-top">1.00</td>
+                                        <td className="p-2 text-right align-top">{item.designCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                        <td className="p-2 text-right align-top">{item.designCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    </tr>
+                                ) : null;
+                                
+                                const printRow = printRate && item.printCost > 0 ? (
+                                     <tr className="border-b">
+                                        <td className="p-2 align-top">{!designRow ? ++itemCounter : ''}</td>
+                                        <td className="p-2">
+                                            <div className="font-bold">{project?.title} Menu Print</div>
+                                            <ul className="list-disc pl-5 text-gray-600">
+                                                <li>Paper: {printRate.paperType}</li>
+                                                <li>Weight: {printRate.weight} gsm</li>
+                                                <li>Sides: {printRate.sides}</li>
+                                                <li>Ink: {printRate.inkCoverage}</li>
+                                            </ul>
+                                        </td>
+                                        <td className="p-2 text-right align-top">{item.quantity}</td>
+                                        <td className="p-2 text-right align-top">{printRatePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                        <td className="p-2 text-right align-top">{item.printCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    </tr>
+                                ) : null;
+                                
+                                const finishingRows = item.finishingDetails.map((finishing, fIndex) => (
+                                    <tr key={`finish-${index}-${fIndex}`} className="border-b">
+                                        <td className="p-2 align-top">{++itemCounter}</td>
+                                        <td className="p-2">
+                                            <div className="font-bold">{finishing.description}</div>
+                                        </td>
+                                        <td className="p-2 text-right align-top">{finishing.qty}</td>
+                                        <td className="p-2 text-right align-top">{(finishing.cost / finishing.qty).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                        <td className="p-2 text-right align-top">{finishing.cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    </tr>
+                                ));
+
+                                return (
+                                    <React.Fragment key={index}>
+                                        {designRow}
+                                        {printRow}
+                                        {finishingRows}
+                                    </React.Fragment>
+                                )
+                            })}
                              <tr className="border-b">
                                 <td className="p-2 align-top"></td>
                                 <td className="p-2 font-bold">FREE DELIVERY</td>
@@ -170,11 +182,11 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({
                              <div className="float-right w-1/2">
                                 <div className="flex justify-between p-2">
                                     <span>Sub Total</span>
-                                    <span>{(totalCost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    <span>{totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 </div>
                                 <div className="flex justify-between p-2 bg-gray-100 font-bold text-base">
                                     <span>Total</span>
-                                    <span>LKR {(totalCost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    <span>LKR {totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 </div>
                             </div>
                         </div>
@@ -196,3 +208,5 @@ export const QuotationPreview: React.FC<QuotationPreviewProps> = ({
         </div>
     );
 };
+
+    

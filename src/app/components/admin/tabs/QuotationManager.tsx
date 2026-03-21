@@ -1,7 +1,7 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useContent } from '../../../context/ContentContext';
-import { PrintRate, Project, FinishingRatesConfig, Quotation, QuotationItem } from '../../../types';
+import { PrintRate, Project, FinishingRatesConfig, SiteConfig, Quotation, QuotationItem } from '../../../types';
 import { Card, SectionHeader, InputGroup, TextInput, Button, TextArea, Select, confirmDelete } from '../ui/AdminShared';
 import { QuotationPreview } from '../QuotationPreview';
 import jsPDF from 'jspdf';
@@ -162,7 +162,7 @@ export const QuotationManager: React.FC = () => {
                                         <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <p className="font-mono text-sm">Rs. {item.total.toLocaleString()}</p>
+                                        <p className="font-mono text-sm">Rs. {item.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                                         <Button variant="danger" size="icon" className="h-7 w-7" onClick={() => handleRemoveItem(index)}><Trash2 className="w-4 h-4" /></Button>
                                     </div>
                                 </div>
@@ -174,7 +174,7 @@ export const QuotationManager: React.FC = () => {
                         <div className="pt-4 border-t border-gray-200 space-y-2">
                              <div className="flex justify-between items-center text-lg font-bold">
                                  <span>Grand Total:</span>
-                                 <span>Rs. {totalCost.toLocaleString()}</span>
+                                 <span>Rs. {totalCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                              </div>
                              <Button onClick={handleSaveQuotation} className="w-full" variant="primary" disabled={isSaving}>{isSaving ? 'Saving...' : 'Save Quotation'}</Button>
                              <Button onClick={handleDownloadPdf} className="w-full" variant="success">Download as PDF</Button>
@@ -185,9 +185,13 @@ export const QuotationManager: React.FC = () => {
             <div className="xl:col-span-2">
                 <div ref={previewRef} className="max-h-[calc(100vh-6rem)] overflow-y-auto bg-gray-200 p-8 shadow-inner rounded-lg" style={{ '--scrollbar-bg': 'rgba(128, 128, 128, 0.4)' } as React.CSSProperties}>
                     <QuotationPreview 
-                        details={{...details, id: quoteId, total: totalCost}}
+                        details={details}
                         items={items}
+                        quoteId={quoteId}
+                        totalCost={totalCost}
                         projects={projects}
+                        printRates={printRates}
+                        config={config}
                     />
                 </div>
             </div>
@@ -355,10 +359,12 @@ const CurrentItemForm: React.FC<{
                     </div>
 
                     <div className="pt-2 text-right">
-                        <span className="text-lg font-bold">Item Total: Rs. {(currentItem.total || 0).toLocaleString()}</span>
+                        <span className="text-lg font-bold">Item Total: Rs. {(currentItem.total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                 </>
             )}
         </div>
     );
 };
+
+    
