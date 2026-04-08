@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { initializeApp, deleteApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, type UserCredential } from 'firebase/auth';
 import { firestore } from '@/firebase';
 import { firebaseConfig } from '@/firebase/config';
 import { AppUser } from '@/app/types';
@@ -38,43 +38,58 @@ export const UserManager: React.FC = () => {
             alert('Email and password are required.');
             return;
         }
-
-        // Generate a unique name for the secondary app to avoid conflicts.
+    
         const appName = `secondary-auth-app-${Date.now()}`;
         let secondaryApp;
-
+        let userCredential: UserCredential | undefined;
+    
         try {
-            // Initialize a secondary Firebase app to create the user without affecting the admin's auth state.
+            // Initialize a secondary Firebase app.
             secondaryApp = initializeApp(firebaseConfig, appName);
             const secondaryAuth = getAuth(secondaryApp);
-            
-            // Create the user with the secondary auth instance.
-            const userCredential = await createUserWithEmailAndPassword(secondaryAuth, newUser.email, newUser.pass);
+    
+            // --- Step 1: Create Auth User ---
+            try {
+                userCredential = await createUserWithEmailAndPassword(secondaryAuth, newUser.email, newUser.pass);
+            } catch (authError: any) {
+                if (authError.code === 'auth/email-already-in-use') {
+                    alert('Error: The email address is already in use by another account.');
+                } else {
+                    alert(`Error creating authentication user: ${authError.message}`);
+                }
+                console.error("Firebase Auth creation error:", authError);
+                return; // Stop execution if auth creation fails
+            }
+    
             const uid = userCredential.user.uid;
-
-            // Now that the user exists in Firebase Auth, the admin (who is still logged in on the primary app)
-            // can create the user's profile document in Firestore.
+    
+            // --- Step 2: Create Firestore Document using primary instance ---
             const userDoc: Omit<AppUser, 'uid'> = {
                 email: newUser.email,
                 role: newUser.role,
                 permissions: newUser.permissions || [],
             };
-
-            await setDoc(doc(firestore, 'users', uid), userDoc);
-            
+    
+            try {
+                await setDoc(doc(firestore, 'users', uid), userDoc);
+            } catch (firestoreError: any) {
+                // This is the specific error handling for the Firestore write operation
+                console.error("Firestore document creation failed:", firestoreError);
+                alert(`CRITICAL: User was created in Authentication, but failed to save profile to Firestore. Please delete the user from the Firebase Console and try again. Error: ${firestoreError.message}`);
+                return; // Stop execution
+            }
+    
+            // --- Success ---
             alert('User created successfully! The new user can now log in.');
             setIsCreating(false);
             setNewUser({ email: '', pass: '', role: 'Editor', permissions: [] });
-
+    
         } catch (error: any) {
-            if (error.code === 'auth/email-already-in-use') {
-                alert('Error: The email address is already in use by another account.');
-            } else {
-                alert(`Error creating user: ${error.message}`);
-            }
-            console.error(error);
+            // This is a catch-all for any other unexpected errors.
+            console.error("An unexpected error occurred in handleCreateUser:", error);
+            alert(`An unexpected error occurred: ${error.message}`);
         } finally {
-            // Always clean up the secondary app instance.
+            // --- Step 3: Cleanup ---
             if (secondaryApp) {
                 try {
                     await deleteApp(secondaryApp);
