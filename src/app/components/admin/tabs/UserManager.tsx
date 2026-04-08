@@ -67,7 +67,11 @@ export const UserManager: React.FC = () => {
             setNewUser({ email: '', pass: '', role: 'Editor', permissions: [] });
 
         } catch (error: any) {
-            alert(`Error creating user: ${error.message}`);
+            if (error.code === 'auth/email-already-in-use') {
+                alert('Error: The email address is already in use by another account.');
+            } else {
+                alert(`Error creating user: ${error.message}`);
+            }
             console.error(error);
         } finally {
             // Always clean up the secondary app instance.
