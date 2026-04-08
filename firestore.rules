@@ -5,10 +5,14 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // A function to check if the requesting user is a Super Admin.
+    // This is true if their email is the hardcoded admin email,
+    // OR if their role is 'Super Admin' in the database.
+    // This allows the main admin to promote other users.
     function isSuperAdmin() {
       return request.auth != null &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Super Admin';
+             (request.auth.token.email == 'menu@i369.com' ||
+               (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Super Admin'));
     }
 
     // Public collections can be read by anyone, but only written by admins.

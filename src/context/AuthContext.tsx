@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut, type User as FirebaseUser } from 'firebase/auth';
-import { doc, onSnapshot, setDoc, getDocs, collection } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { auth, firestore } from '@/firebase';
 import { AppUser } from '@/app/types';
 
@@ -14,19 +14,6 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Helper to create the first Super Admin if no users exist
-const bootstrapSuperAdmin = async (firebaseUser: FirebaseUser) => {
-    const userDocRef = doc(firestore, 'users', firebaseUser.uid);
-    const superAdminData: Omit<AppUser, 'uid'> = {
-        email: firebaseUser.email!,
-        role: 'Super Admin',
-        permissions: ['Analytics', 'Projects', 'Quote Generator', 'Quote Template', 'Curation', 'About', 'Trusted By', 'Settings', 'Users & Roles', 'Orders']
-    };
-    await setDoc(userDocRef, superAdminData);
-    return { uid: firebaseUser.uid, ...superAdminData };
-};
-
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -44,18 +31,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         setAppUser({ uid: docSnapshot.id, ...docSnapshot.data() } as AppUser);
                         setLoading(false);
                     } else {
-                        // User is authenticated but has no profile. Check if they should be the Super Admin.
-                        const usersCollectionRef = collection(firestore, 'users');
-                        const allUsersSnapshot = await getDocs(usersCollectionRef);
-                        
-                        if (allUsersSnapshot.empty) {
-                            // This is the very first user. Bootstrap them as a Super Admin.
-                            const adminUser = await bootstrapSuperAdmin(firebaseUser);
-                            setAppUser(adminUser);
+                        // User is authenticated but has no profile.
+                        if (firebaseUser.email === 'menu@i369.com') {
+                            // This is the designated Super Admin. Create their profile.
+                            console.log("Creating Super Admin profile for menu@i369.com");
+                            const superAdminData: Omit<AppUser, 'uid'> = {
+                                email: firebaseUser.email!,
+                                role: 'Super Admin',
+                                permissions: ['Analytics', 'Projects', 'Quote Generator', 'Quotation History', 'Quote Template', 'Print Rates', 'Finishing Rates', 'Curation', 'About', 'Trusted By', 'Settings', 'Users & Roles', 'Orders']
+                            };
+                            await setDoc(userDocRef, superAdminData);
+                            setAppUser({ uid: firebaseUser.uid, ...superAdminData });
                         } else {
-                            // Other users exist. This is an orphaned account without a profile.
-                            // For security, deny access and log them out.
-                            console.error("Authenticated user has no profile in Firestore and is not the first user. Logging out for security.");
+                            // Any other user without a profile is considered unauthorized.
+                            console.error(`Authenticated user ${firebaseUser.email} has no profile. Logging out for security.`);
                             await signOut(auth);
                             setAppUser(null);
                         }
