@@ -7,9 +7,8 @@ service firebase.storage {
     // This mirrors the logic in firestore.rules for consistency.
     function isSuperAdmin() {
       return request.auth != null &&
-             (request.auth.token.email == 'menu@i369.com' ||
-               (exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
-                get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'Super Admin'));
+             exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+             get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'Super Admin';
     }
 
     match /{allPaths=**} {

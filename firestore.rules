@@ -4,15 +4,12 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // A function to check if the requesting user is a Super Admin.
-    // This is true if their email is the hardcoded admin email,
-    // OR if their role is 'Super Admin' in the database.
-    // This allows the main admin to promote other users.
+    // A function to check if the requesting user is a Super Admin
+    // by reading their role from the 'users' collection.
     function isSuperAdmin() {
       return request.auth != null &&
-             (request.auth.token.email == 'menu@i369.com' ||
-               (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Super Admin'));
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Super Admin';
     }
 
     // Public collections can be read by anyone, but only written by admins.
@@ -22,10 +19,21 @@ service cloud.firestore {
         allow write: if isSuperAdmin();
     }
 
-    // Users can read their own data. Admins can read/write any user data.
+    // Rules for the 'users' collection
     match /users/{userId} {
+      // Users can read their own data, Admins can read any user data.
       allow read: if request.auth.uid == userId || isSuperAdmin();
-      allow write: if isSuperAdmin();
+      
+      // An authenticated user can create their own user document.
+      // This rule is necessary to allow the first user to be bootstrapped as a Super Admin.
+      // This assumes client-side logic correctly assigns the 'Super Admin' role ONLY to the first user.
+      allow create: if request.auth.uid == userId;
+
+      // Only Super Admins can update user documents (e.g. to change roles).
+      allow update: if isSuperAdmin();
+
+      // Only Super Admins can delete user documents.
+      allow delete: if isSuperAdmin();
     }
 
     // Quotations are internal and should only be accessed by admins.
