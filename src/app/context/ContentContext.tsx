@@ -85,8 +85,8 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const quotationsColRef = collection(firestore, "quotations");
         let unsubQuotations = () => {}; // No-op function
 
-        // Only listen if the user is an admin
-        if (appUser && appUser.role === 'Super Admin') {
+        // Only listen if the user is an admin to prevent permission errors for public users.
+        if (appUser && (appUser.role === 'Super Admin' || appUser.role === 'Sales')) {
             unsubQuotations = onSnapshot(quotationsColRef, (snapshot) => {
                 const quotationsData = snapshot.docs.map(doc => doc.data() as Quotation).sort((a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime());
                 setQuotationsState(quotationsData);
@@ -94,7 +94,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 console.error("Error listening to quotations collection:", error);
             });
         } else {
-            // Clear quotations if user is not an admin or logs out
+            // If user is not an admin or logs out, clear the quotations to prevent showing stale data.
             setQuotationsState([]);
         }
 

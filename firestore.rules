@@ -4,15 +4,19 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // A function to check if the user is the hardcoded Super Admin via email.
+    // Function to check for the hardcoded Super Admin email.
+    // This user is the root administrator.
     function isEmailSuperAdmin() {
       return request.auth != null &&
-             request.auth.token.email == 'menu@i369.com';
+             request.auth.token.email == 'menu@i369.com' &&
+             request.auth.token.email_verified == true;
     }
 
-    // A function to check if the user has the 'Super Admin' role in their Firestore document.
+    // Function to check if a user has been granted the 'Super Admin' role
+    // in their user document. This allows for role delegation.
     function isRoleSuperAdmin() {
       return request.auth != null &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Super Admin';
     }
 
@@ -20,8 +24,14 @@ service cloud.firestore {
     function isSuperAdmin() {
       return isEmailSuperAdmin() || isRoleSuperAdmin();
     }
+    
+    // A function to check if a user has the 'Sales' role.
+    function isSales() {
+       return request.auth != null &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Sales';
+    }
 
-    // A function to check if a user is the owner of a document.
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
     }
@@ -35,24 +45,18 @@ service cloud.firestore {
 
     // Rules for the 'users' collection.
     match /users/{userId} {
-      // A Super Admin can read any user's profile and list all users.
-      // Other authenticated users can only get their own profile.
       allow get: if isOwner(userId) || isSuperAdmin();
       allow list: if isSuperAdmin();
-      
-      // A Super Admin can update or delete any user profile.
       allow update, delete: if isSuperAdmin();
-
-      // Creation rules:
-      // 1. A Super Admin can create any user profile (for UserManager).
-      // 2. Any other user can create their own profile, but cannot assign a 'role'.
+      
+      // Allow user creation if it's the admin doing it,
+      // OR if a new user is creating their own profile without assigning a role.
       allow create: if isSuperAdmin() || (isOwner(userId) && !('role' in request.resource.data));
     }
 
-    // Quotations can only be read or written by a Super Admin.
-    // This could be expanded to include a 'Sales' role if needed in the future.
+    // Quotations can be read/written by Super Admins and Sales role.
     match /quotations/{quoteId} {
-      allow read, write: if isSuperAdmin();
+      allow read, write: if isSuperAdmin() || isSales();
     }
   }
 }
