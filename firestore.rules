@@ -4,39 +4,42 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // A function to check if the requesting user is a Super Admin
-    // by reading their role from the 'users' collection.
+    // Updated function to verify the Super Admin by a specific, hardcoded email.
+    // The user must be authenticated, their email must match, and it must be verified.
     function isSuperAdmin() {
       return request.auth != null &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Super Admin';
+             request.auth.token.email == 'menu@i369.com' &&
+             request.auth.token.email_verified == true;
     }
 
-    // Public collections can be read by anyone, but only written by admins.
+    // Public collections remain readable by anyone, but are only writable by the Super Admin.
     match /{collectionName}/{docId}
       where collectionName in ['projects', 'content', 'printRates'] {
         allow read: if true;
         allow write: if isSuperAdmin();
     }
 
-    // Rules for the 'users' collection
+    // Rules for the 'users' collection are now more secure.
     match /users/{userId} {
-      // Users can read their own data, Admins can read any user data.
+      // Users can read their own data, and the Super Admin can read any user's data.
       allow read: if request.auth.uid == userId || isSuperAdmin();
       
-      // An authenticated user can create their own user document.
-      // This rule is necessary to allow the first user to be bootstrapped as a Super Admin.
-      // This assumes client-side logic correctly assigns the 'Super Admin' role ONLY to the first user.
-      allow create: if request.auth.uid == userId;
+      // NEW CREATE RULE:
+      // This rule allows two scenarios for document creation in the 'users' collection:
+      // 1. A user is creating THEIR OWN document, but they are NOT allowed to include a 'role' field.
+      //    This prevents self-escalation of privileges.
+      // 2. The request is being made by the designated Super Admin. This allows the admin
+      //    to create other users and assign them roles via the admin panel.
+      allow create: if (request.auth.uid == userId && !('role' in request.resource.data)) || isSuperAdmin();
 
-      // Only Super Admins can update user documents (e.g. to change roles).
+      // Only the Super Admin can update user documents (e.g., to change roles).
       allow update: if isSuperAdmin();
 
-      // Only Super Admins can delete user documents.
+      // Only the Super Admin can delete user documents.
       allow delete: if isSuperAdmin();
     }
 
-    // Quotations are internal and should only be accessed by admins.
+    // Quotations remain internal and should only be accessed by the Super Admin.
     match /quotations/{quoteId} {
       allow read, write: if isSuperAdmin();
     }
