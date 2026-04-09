@@ -1,14 +1,13 @@
 
-// @ts-nocheck
 import { FirebaseOptions, initializeApp, getApps } from 'firebase/app';
 
 export const firebaseConfig: FirebaseOptions = {
-  apiKey: "AIzaSyCQA1f2QqOlcv6_xrzde1XslG9zdcc8yN8",
-  authDomain: "studio-3326036389-ccbc6.firebaseapp.com",
-  projectId: "studio-3326036389-ccbc6",
-  storageBucket: "studio-3326036389-ccbc6.firebasestorage.app",
-  messagingSenderId: "971594237624",
-  appId: "1:971594237624:web:2937fbf2a675cc9f70964d"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
 function initializeFirebase() {
