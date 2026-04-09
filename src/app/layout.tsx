@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { Providers } from "./providers";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -27,7 +28,9 @@ export default function RootLayout({
             <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Sans+Sinhala:wght@300;400;500;600&family=Noto+Sans+Tamil:wght@300;400;500;600&display=swap" rel="stylesheet" />
         </head>
       <body className={inter.className}>
-        <div id="root">{children}</div>
+          <Providers>
+            <div id="root">{children}</div>
+          </Providers>
       </body>
     </html>
   );

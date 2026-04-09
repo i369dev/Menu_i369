@@ -1,5 +1,4 @@
-
-import { FirebaseOptions, initializeApp, getApps } from 'firebase/app';
+import { FirebaseOptions } from 'firebase/app';
 
 export const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -9,12 +8,3 @@ export const firebaseConfig: FirebaseOptions = {
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
-
-function initializeFirebase() {
-  if (getApps().length > 0) {
-    return;
-  }
-  initializeApp(firebaseConfig);
-}
-
-initializeFirebase();

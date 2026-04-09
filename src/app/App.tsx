@@ -9,7 +9,7 @@ import { CurationSection } from './components/CurationSection';
 import { ContactSection } from './components/ContactSection';
 import { Page } from './types';
 import { Language } from './utils/translations';
-import { ContentProvider, useContent } from './context/ContentContext';
+import { useContent } from './context/ContentContext';
 
 const AppContent: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -100,9 +100,7 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => (
-    <ContentProvider>
-        <AppContent />
-    </ContentProvider>
+    <AppContent />
 );
 
 export default App;

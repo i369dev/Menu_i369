@@ -3,19 +3,17 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // A function to check if the requesting user is a Super Admin.
-    // This mirrors the logic in firestore.rules for consistency.
+    // A function to check if the requesting user is the designated Super Admin.
     function isSuperAdmin() {
-      return request.auth != null &&
-             exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
-             get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'Super Admin';
+      return request.auth != null && 
+             request.auth.token.email == 'menu@i369.com';
     }
 
     match /{allPaths=**} {
       // Allow public read access to all files.
       allow read: if true;
 
-      // Allow write access (create, update, delete) only for authenticated Super Admins.
+      // Allow write access (create, update, delete) only for the authenticated Super Admin.
       allow write: if isSuperAdmin();
     }
   }

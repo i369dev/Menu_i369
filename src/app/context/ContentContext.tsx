@@ -5,6 +5,7 @@ import { initialConfig, initialFinishingRates } from '../utils/defaults';
 import { Language } from '../utils/translations';
 import { firestore } from '@/firebase';
 import { doc, onSnapshot, setDoc, collection, writeBatch, deleteDoc, getDocs, query } from "firebase/firestore";
+import { useAuth } from './AuthContext';
 
 interface ContentContextType {
     isContentLoading: boolean;
@@ -35,6 +36,7 @@ interface ContentContextType {
 const ContentContext = createContext<ContentContextType | undefined>(undefined);
 
 export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { appUser } = useAuth();
     const [isContentLoading, setIsContentLoading] = useState(true);
     const [projects, setProjectsState] = useState<Project[]>([]);
     const [curatedItems, setCuratedItemsState] = useState<CuratedItem[]>([]);
@@ -50,8 +52,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const contentDocRef = doc(firestore, "content", "main");
         const projectsColRef = collection(firestore, "projects");
         const printRatesColRef = collection(firestore, "printRates");
-        const quotationsColRef = collection(firestore, "quotations");
-
+        
         const unsubContent = onSnapshot(contentDocRef, (doc) => {
             if (doc.exists()) {
                 const data = doc.data();
@@ -61,14 +62,12 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 setTrustedClientsState(data.trustedClients || []);
                 setFinishingRatesState(data.finishingRates || initialFinishingRates);
             } else {
-                // If the main content doc doesn't exist, use the empty initial state.
                 setConfigState(initialConfig);
                 setCuratedItemsState([]);
                 setOrdersState([]);
                 setTrustedClientsState([]);
                 setFinishingRatesState(initialFinishingRates);
             }
-            // Once the main config is loaded (or confirmed not to exist), content loading is done.
             setIsContentLoading(false);
         });
 
@@ -82,10 +81,22 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
             setPrintRatesState(ratesData);
         });
         
-        const unsubQuotations = onSnapshot(quotationsColRef, (snapshot) => {
-            const quotationsData = snapshot.docs.map(doc => doc.data() as Quotation).sort((a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime());
-            setQuotationsState(quotationsData);
-        });
+        // --- Conditional listener for Quotations ---
+        const quotationsColRef = collection(firestore, "quotations");
+        let unsubQuotations = () => {}; // No-op function
+
+        // Only listen if the user is an admin
+        if (appUser && appUser.role === 'Super Admin') {
+            unsubQuotations = onSnapshot(quotationsColRef, (snapshot) => {
+                const quotationsData = snapshot.docs.map(doc => doc.data() as Quotation).sort((a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime());
+                setQuotationsState(quotationsData);
+            }, (error) => {
+                console.error("Error listening to quotations collection:", error);
+            });
+        } else {
+            // Clear quotations if user is not an admin or logs out
+            setQuotationsState([]);
+        }
 
         return () => {
             unsubContent();
@@ -93,7 +104,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
             unsubPrintRates();
             unsubQuotations();
         };
-    }, []);
+    }, [appUser]); // Dependency on appUser ensures this effect re-runs on login/logout
 
     const saveContent = async (data: any) => {
         const contentDocRef = doc(firestore, "content", "main");
