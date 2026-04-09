@@ -1,13 +1,13 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Project, CuratedItem, Order, SiteConfig, TrustedClient, PrintRate, FinishingRatesConfig, Quotation } from '../types';
-import { initialProjects, initialCuratedItems, initialConfig, initialClients, initialFinishingRates } from '../utils/defaults';
-import { initialPrintRates } from '../utils/printRatesData';
+import { initialConfig, initialFinishingRates } from '../utils/defaults';
 import { Language } from '../utils/translations';
 import { firestore } from '@/firebase';
 import { doc, onSnapshot, setDoc, collection, writeBatch, deleteDoc, getDocs, query } from "firebase/firestore";
 
 interface ContentContextType {
+    isContentLoading: boolean;
     projects: Project[];
     deleteProject: (id: number) => Promise<void>;
     curatedItems: CuratedItem[];
@@ -35,11 +35,12 @@ interface ContentContextType {
 const ContentContext = createContext<ContentContextType | undefined>(undefined);
 
 export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [isContentLoading, setIsContentLoading] = useState(true);
     const [projects, setProjectsState] = useState<Project[]>([]);
-    const [curatedItems, setCuratedItemsState] = useState<CuratedItem[]>(initialCuratedItems);
+    const [curatedItems, setCuratedItemsState] = useState<CuratedItem[]>([]);
     const [orders, setOrdersState] = useState<Order[]>([]);
     const [config, setConfigState] = useState<SiteConfig>(initialConfig);
-    const [trustedClients, setTrustedClientsState] = useState<TrustedClient[]>(initialClients);
+    const [trustedClients, setTrustedClientsState] = useState<TrustedClient[]>([]);
     const [printRates, setPrintRatesState] = useState<PrintRate[]>([]);
     const [finishingRates, setFinishingRatesState] = useState<FinishingRatesConfig>(initialFinishingRates);
     const [quotations, setQuotationsState] = useState<Quotation[]>([]);
@@ -51,73 +52,40 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const printRatesColRef = collection(firestore, "printRates");
         const quotationsColRef = collection(firestore, "quotations");
 
-        // Listener for config, orders, etc. from the single doc
         const unsubContent = onSnapshot(contentDocRef, (doc) => {
             if (doc.exists()) {
                 const data = doc.data();
-                setCuratedItemsState(data.curatedItems || initialCuratedItems);
+                setCuratedItemsState(data.curatedItems || []);
                 setOrdersState(data.orders || []);
                 setConfigState(data.config || initialConfig);
-                setTrustedClientsState(data.trustedClients || initialClients);
+                setTrustedClientsState(data.trustedClients || []);
                 setFinishingRatesState(data.finishingRates || initialFinishingRates);
             } else {
-                // Initialize non-project content if it doesn't exist
-                saveContent({
-                    curatedItems: initialCuratedItems,
-                    orders: [],
-                    config: initialConfig,
-                    trustedClients: initialClients,
-                    finishingRates: initialFinishingRates,
-                });
+                // If the main content doc doesn't exist, use the empty initial state.
+                setConfigState(initialConfig);
+                setCuratedItemsState([]);
+                setOrdersState([]);
+                setTrustedClientsState([]);
+                setFinishingRatesState(initialFinishingRates);
             }
+            // Once the main config is loaded (or confirmed not to exist), content loading is done.
+            setIsContentLoading(false);
         });
 
-        // Listener for projects collection
-        const unsubProjects = onSnapshot(projectsColRef, async (snapshot) => {
-            if (snapshot.empty && initialProjects.length > 0) {
-                console.log("Projects collection is empty. Seeding initial data...");
-                try {
-                    const batch = writeBatch(firestore);
-                    initialProjects.forEach(project => {
-                        const projectRef = doc(firestore, "projects", project.id.toString());
-                        batch.set(projectRef, project);
-                    });
-                    await batch.commit();
-                } catch (e) {
-                    console.error("Error seeding projects:", e);
-                }
-            } else {
-                const projectsData = snapshot.docs.map(doc => doc.data() as Project).sort((a, b) => a.id - b.id);
-                setProjectsState(projectsData);
-            }
+        const unsubProjects = onSnapshot(projectsColRef, (snapshot) => {
+            const projectsData = snapshot.docs.map(doc => doc.data() as Project).sort((a, b) => a.id - b.id);
+            setProjectsState(projectsData);
         });
 
-        // Listener for print rates collection
-        const unsubPrintRates = onSnapshot(printRatesColRef, async (snapshot) => {
-            if (snapshot.empty && initialPrintRates.length > 0) {
-                 console.log("Print rates collection is empty. Seeding initial data...");
-                try {
-                    const batch = writeBatch(firestore);
-                    initialPrintRates.forEach(rate => {
-                        const rateRef = doc(firestore, "printRates", rate.id);
-                        batch.set(rateRef, rate);
-                    });
-                    await batch.commit();
-                } catch (e) {
-                    console.error("Error seeding print rates:", e);
-                }
-            } else {
-                const ratesData = snapshot.docs.map(doc => doc.data() as PrintRate);
-                setPrintRatesState(ratesData);
-            }
+        const unsubPrintRates = onSnapshot(printRatesColRef, (snapshot) => {
+            const ratesData = snapshot.docs.map(doc => doc.data() as PrintRate);
+            setPrintRatesState(ratesData);
         });
         
-        // Listener for quotations collection
         const unsubQuotations = onSnapshot(quotationsColRef, (snapshot) => {
             const quotationsData = snapshot.docs.map(doc => doc.data() as Quotation).sort((a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime());
             setQuotationsState(quotationsData);
         });
-
 
         return () => {
             unsubContent();
@@ -203,7 +171,6 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         await setDoc(quotationDocRef, quotation);
     };
 
-    // Filter projects for frontend view (isVisible !== false)
     const getLocalizedProjects = (lang: Language) => {
         const visibleProjects = projects.filter(p => p.isVisible !== false);
         
@@ -216,7 +183,6 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }));
     };
 
-    // Filter config lists (Team, Social) for frontend view
     const getLocalizedConfig = (lang: Language): SiteConfig => {
         const visibleTeam = (config.teamMembers || []).filter(m => m.isVisible !== false);
         const visibleSocial = (config.socialLinks || []).filter(s => s.isVisible !== false);
@@ -253,6 +219,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     return (
         <ContentContext.Provider value={{
+            isContentLoading,
             projects,
             deleteProject,
             curatedItems,

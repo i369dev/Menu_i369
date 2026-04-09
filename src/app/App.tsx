@@ -9,13 +9,14 @@ import { CurationSection } from './components/CurationSection';
 import { ContactSection } from './components/ContactSection';
 import { Page } from './types';
 import { Language } from './utils/translations';
-import { ContentProvider } from './context/ContentContext';
+import { ContentProvider, useContent } from './context/ContentContext';
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState<Omit<Page, 'admin'>>('work');
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [isDetailView, setIsDetailView] = useState(false);
+  const { isContentLoading } = useContent();
   
   const [language, setLanguage] = useState<Language>(() => {
       const saved = typeof window !== 'undefined' ? localStorage.getItem('i369-language') : null;
@@ -53,50 +54,55 @@ const App: React.FC = () => {
   const currentLang = language || 'en';
 
   return (
-    <ContentProvider>
-        <div 
-            className="min-h-screen font-sans selection:bg-white selection:text-black transition-colors duration-1000 ease-in-out"
-            style={{ backgroundColor: bgColors[page] }}
-        >
-        <AnimatePresence>
-            {loading && (
-                <Loader 
-                    key="loader" 
-                    onComplete={handleLoaderComplete} 
-                    initialLanguage={language}
-                    onLanguageSelect={handleLanguageSelect}
+    <div 
+        className="min-h-screen font-sans selection:bg-white selection:text-black transition-colors duration-1000 ease-in-out"
+        style={{ backgroundColor: bgColors[page] }}
+    >
+    <AnimatePresence>
+        {loading && (
+            <Loader 
+                key="loader" 
+                onComplete={handleLoaderComplete} 
+                initialLanguage={language}
+                onLanguageSelect={handleLanguageSelect}
+            />
+        )}
+    </AnimatePresence>
+
+    <main className="relative z-0">
+        <Navbar 
+            activePage={page} 
+            setPage={setPage} 
+            textColor={navTextColors[page]} 
+            isFirstLoad={isFirstLoad}
+            language={currentLang}
+            isDetailView={isDetailView}
+        />
+        
+        <AnimatePresence mode='wait'>
+            {!isContentLoading && page === 'work' && (
+                <WorkSection 
+                    key="work" 
+                    isFirstLoad={isFirstLoad} 
+                    language={currentLang} 
+                    onLanguageChange={handleLanguageSelect}
+                    onDetailViewChange={setIsDetailView}
+                    setPage={setPage}
                 />
             )}
+            {!isContentLoading && page === 'about' && <AboutSection key="about" language={currentLang} />}
+            {!isContentLoading && page === 'curation' && <CurationSection key="curation" language={currentLang} />}
+            {!isContentLoading && page === 'contact' && <ContactSection key="contact" language={currentLang} />}
         </AnimatePresence>
-
-        <main className="relative z-0">
-            <Navbar 
-                activePage={page} 
-                setPage={setPage} 
-                textColor={navTextColors[page]} 
-                isFirstLoad={isFirstLoad}
-                language={currentLang}
-                isDetailView={isDetailView}
-            />
-            
-            <AnimatePresence mode='wait'>
-                {page === 'work' && (
-                    <WorkSection 
-                        key="work" 
-                        isFirstLoad={isFirstLoad} 
-                        language={currentLang} 
-                        onLanguageChange={handleLanguageSelect}
-                        onDetailViewChange={setIsDetailView}
-                    />
-                )}
-                {page === 'about' && <AboutSection key="about" language={currentLang} />}
-                {page === 'curation' && <CurationSection key="curation" language={currentLang} />}
-                {page === 'contact' && <ContactSection key="contact" language={currentLang} />}
-            </AnimatePresence>
-        </main>
-        </div>
-    </ContentProvider>
+    </main>
+    </div>
   );
 };
+
+const App: React.FC = () => (
+    <ContentProvider>
+        <AppContent />
+    </ContentProvider>
+);
 
 export default App;
