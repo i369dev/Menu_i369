@@ -1,62 +1,58 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Function to check for the hardcoded Super Admin email.
-    // This user is the root administrator.
-    function isEmailSuperAdmin() {
-      return request.auth != null &&
-             request.auth.token.email == 'menu@i369.com' &&
-             request.auth.token.email_verified == true;
-    }
-
-    // Function to check if a user has been granted the 'Super Admin' role
-    // in their user document. This allows for role delegation.
-    function isRoleSuperAdmin() {
-      return request.auth != null &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Super Admin';
-    }
-
-    // A user is considered a Super Admin if they are the hardcoded email OR have the role.
+    // This function defines what a "Super Admin" is.
+    // It checks for the hardcoded email OR a 'Super Admin' role in the user's Firestore document.
+    // This allows for both a primary admin and delegated admins.
     function isSuperAdmin() {
-      return isEmailSuperAdmin() || isRoleSuperAdmin();
-    }
-    
-    // A function to check if a user has the 'Sales' role.
-    function isSales() {
-       return request.auth != null &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Sales';
+      // Check for the hardcoded primary admin email.
+      let isEmailAdmin = request.auth != null &&
+                         request.auth.token.email == 'menu@i369.com' &&
+                         request.auth.token.email_verified == true;
+      
+      // Check for a 'Super Admin' role assigned in the user's profile document.
+      let isRoleAdmin = request.auth != null &&
+                        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Super Admin';
+
+      return isEmailAdmin || isRoleAdmin;
     }
 
+    // This function checks if the user making the request is the owner of the document.
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
     }
 
-    // Public collections are readable by anyone, but only writable by a Super Admin.
+    // Public collections can be read by anyone, but only written to by a Super Admin.
     match /{collectionName}/{docId}
       where collectionName in ['projects', 'content', 'printRates'] {
         allow read: if true;
         allow write: if isSuperAdmin();
     }
+    
+    // Protected collections that can only be read or written to by a Super Admin.
+    match /{collectionName}/{docId}
+      where collectionName in ['settings', 'orders', 'quotations'] {
+        allow read, write: if isSuperAdmin();
+    }
 
     // Rules for the 'users' collection.
     match /users/{userId} {
+      // An admin can get any user's profile.
+      // An authenticated user can only get their own profile.
       allow get: if isOwner(userId) || isSuperAdmin();
+
+      // Only the admin can list all users.
       allow list: if isSuperAdmin();
+
+      // Only the admin can update or delete users.
       allow update, delete: if isSuperAdmin();
       
-      // Allow user creation if it's the admin doing it,
-      // OR if a new user is creating their own profile without assigning a role.
+      // An admin can create any user.
+      // A new user can create their own profile, but only if they are not assigning themselves a 'role'.
       allow create: if isSuperAdmin() || (isOwner(userId) && !('role' in request.resource.data));
-    }
-
-    // Quotations can be read/written by Super Admins and Sales role.
-    match /quotations/{quoteId} {
-      allow read, write: if isSuperAdmin() || isSales();
     }
   }
 }
