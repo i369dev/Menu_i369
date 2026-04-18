@@ -15,7 +15,7 @@ export const UserManager: React.FC = () => {
     const [users, setUsers] = useState<AppUser[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [editingUser, setEditingUser] = useState<AppUser | null>(null);
-    const [newUser, setNewUser] = useState<{email: string, pass: string, role: AppUser['role'], permissions: string[]}>({
+    const [newUser, setNewUser] = useState<{email: string, pass: string, role: string, permissions: string[]}>({
         email: '', pass: '', role: 'Editor', permissions: []
     });
     const [isCreating, setIsCreating] = useState(false);
@@ -44,11 +44,9 @@ export const UserManager: React.FC = () => {
         let userCredential: UserCredential | undefined;
     
         try {
-            // Initialize a secondary Firebase app.
             secondaryApp = initializeApp(firebaseConfig, appName);
             const secondaryAuth = getAuth(secondaryApp);
     
-            // --- Step 1: Create Auth User ---
             try {
                 userCredential = await createUserWithEmailAndPassword(secondaryAuth, newUser.email, newUser.pass);
             } catch (authError: any) {
@@ -57,44 +55,36 @@ export const UserManager: React.FC = () => {
                 } else {
                     alert(`Error creating authentication user: ${authError.message}`);
                 }
-                console.error("Firebase Auth creation error:", authError);
-                return; // Stop execution if auth creation fails
+                return;
             }
     
             const uid = userCredential.user.uid;
     
-            // --- Step 2: Create Firestore Document using primary instance ---
             const userDoc: Omit<AppUser, 'uid'> = {
                 email: newUser.email,
-                role: newUser.role,
+                role: newUser.role as AppUser['role'],
                 permissions: newUser.permissions || [],
             };
     
             try {
                 await setDoc(doc(firestore, 'users', uid), userDoc);
             } catch (firestoreError: any) {
-                // This is the specific error handling for the Firestore write operation
-                console.error("Firestore document creation failed:", firestoreError);
-                alert(`CRITICAL: User was created in Authentication, but failed to save profile to Firestore. Please delete the user from the Firebase Console and try again. Error: ${firestoreError.message}`);
-                return; // Stop execution
+                alert(`CRITICAL Error: ${firestoreError.message}`);
+                return; 
             }
     
-            // --- Success ---
             alert('User created successfully! The new user can now log in.');
             setIsCreating(false);
             setNewUser({ email: '', pass: '', role: 'Editor', permissions: [] });
     
         } catch (error: any) {
-            // This is a catch-all for any other unexpected errors.
-            console.error("An unexpected error occurred in handleCreateUser:", error);
             alert(`An unexpected error occurred: ${error.message}`);
         } finally {
-            // --- Step 3: Cleanup ---
             if (secondaryApp) {
                 try {
                     await deleteApp(secondaryApp);
                 } catch (deleteError) {
-                    console.error("Failed to delete secondary Firebase app instance:", deleteError);
+                    console.error("Failed to delete secondary app:", deleteError);
                 }
             }
         }
@@ -113,7 +103,7 @@ export const UserManager: React.FC = () => {
     };
     
     const handleDeleteUser = async (uid: string) => {
-        if (confirmDelete('This will delete the user profile from the database, but will NOT delete their authentication record. That must be done from the Firebase Console. Continue?')) {
+        if (confirmDelete('This will delete the user profile from the database, but will NOT delete their authentication record. Continue?')) {
             try {
                 await deleteDoc(doc(firestore, 'users', uid));
                 alert('User data deleted from Firestore.');
@@ -153,10 +143,10 @@ export const UserManager: React.FC = () => {
                         <InputGroup label="Email"><TextInput type="email" value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} /></InputGroup>
                         <InputGroup label="Password"><TextInput type="password" value={newUser.pass} onChange={e => setNewUser({...newUser, pass: e.target.value})} /></InputGroup>
                         <InputGroup label="Role">
-                           <select value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value as AppUser['role']})} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                           <select value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
                                 <option value="Editor">Editor</option>
                                 <option value="Sales">Sales</option>
-                                <option value="Super Admin">Super Admin</option>
+                                <option value="Admin">Admin</option>
                            </select>
                         </InputGroup>
                         <InputGroup label="Permissions">
@@ -177,26 +167,36 @@ export const UserManager: React.FC = () => {
                 )}
                 
                 <div className="space-y-4">
-                    {users.map(user => (
+                    {users.map(user => {
+                        // මේ පේළිය මගින් menu@i369.com ගිණුම හඳුනා ගනී
+                        const isSuperAdmin = user.email === 'menu@i369.com';
+                        
+                        return (
                         <div key={user.uid} className="p-4 border rounded-lg bg-white">
                             <div className="flex justify-between items-center">
                                 <div>
                                     <p className="font-bold">{user.email}</p>
-                                    <p className="text-xs px-2 py-0.5 inline-block bg-gray-200 text-gray-800 rounded-full font-semibold">{user.role}</p>
+                                    <p className="text-xs px-2 py-0.5 mt-1 inline-block bg-gray-200 text-gray-800 rounded-full font-semibold">
+                                        {isSuperAdmin ? 'Super Admin' : user.role}
+                                    </p>
                                 </div>
                                 <div className="flex gap-2">
-                                    <Button variant="secondary" onClick={() => setEditingUser(user)}>Edit</Button>
-                                    <Button variant="danger" onClick={() => handleDeleteUser(user.uid)}>Delete</Button>
+                                    {!isSuperAdmin && (
+                                        <>
+                                            <Button variant="secondary" onClick={() => setEditingUser(user)}>Edit</Button>
+                                            <Button variant="danger" onClick={() => handleDeleteUser(user.uid)}>Delete</Button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                             
-                            {editingUser?.uid === user.uid && (
+                            {editingUser?.uid === user.uid && !isSuperAdmin && (
                                 <div className="mt-4 pt-4 border-t space-y-4">
                                     <InputGroup label="Role">
                                         <select value={editingUser.role} onChange={e => setEditingUser({...editingUser, role: e.target.value as AppUser['role']})} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
                                             <option value="Editor">Editor</option>
                                             <option value="Sales">Sales</option>
-                                            <option value="Super Admin">Super Admin</option>
+                                            <option value="Admin">Admin</option>
                                         </select>
                                     </InputGroup>
                                     <InputGroup label="Permissions">
@@ -216,7 +216,7 @@ export const UserManager: React.FC = () => {
                                 </div>
                             )}
                         </div>
-                    ))}
+                    )})}
                 </div>
             </Card>
         </div>

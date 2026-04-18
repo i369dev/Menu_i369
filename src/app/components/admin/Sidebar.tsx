@@ -1,6 +1,6 @@
-
 import React from 'react';
-import { useAuth } from '@/context/AuthContext';
+// මෙතැන import path එක නිවැරදි කර ඇත
+import { useAuth } from '@/app/context/AuthContext'; 
 
 interface SidebarProps {
     tabs: ReadonlyArray<string>;

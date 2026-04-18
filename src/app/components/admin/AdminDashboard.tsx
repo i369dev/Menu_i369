@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
 import { ProjectManager } from './tabs/ProjectManager';
@@ -12,7 +11,7 @@ import { QuotationManager } from './tabs/QuotationManager';
 import { QuotationTemplateManager } from './tabs/QuotationTemplateManager';
 import { PrintRatesManager } from './tabs/PrintRatesManager';
 import { FinishingRatesManager } from './tabs/FinishingRatesManager';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/app/context/AuthContext';
 import { LoginView } from './LoginView';
 import { UserManager } from './tabs/UserManager';
 import { Card } from './ui/AdminShared';
@@ -30,18 +29,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit }) => {
     const [activeTab, setActiveTab] = useState<Tab>('Analytics');
 
     const visibleTabs = useMemo(() => {
-        if (!appUser) return [];
-        if (appUser.role === 'Super Admin') {
+        if (!user || !appUser) return [];
+        
+        // 1. menu@i369.com ඊමේල් එක තිබේ නම්, ඔහුට සියලුම Tabs පෙන්වයි (Super Admin)
+        if (user.email === 'menu@i369.com') {
             return ALL_TABS;
         }
-        // Filter by permissions
+        
+        // 2. වෙනත් අයෙක් නම්, ඔවුන්ගේ appUser.permissions වල ඇති දේවල් පමණක් පෙන්වයි
         return ALL_TABS.filter(tab => appUser.permissions?.includes(tab));
-    }, [appUser]);
+    }, [user, appUser]);
 
     useEffect(() => {
-        // If the active tab is no longer visible (e.g. permissions changed), default to first visible tab.
+        // Active tab එක Permissions වල නැත්නම්, Permissions වල තියෙන පළවෙනි Tab එකට මාරු කරයි
         if (visibleTabs.length > 0 && !visibleTabs.includes(activeTab)) {
-            setActiveTab(visibleTabs[0]);
+            setActiveTab(visibleTabs[0] as Tab);
         }
     }, [visibleTabs, activeTab]);
 
@@ -58,11 +60,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onExit }) => {
     }
 
     const renderContent = () => {
-        if (!visibleTabs.includes(activeTab)) {
+        if (visibleTabs.length === 0 || !visibleTabs.includes(activeTab)) {
             return (
                 <Card>
-                    <h3 className="font-bold text-lg">Access Denied</h3>
-                    <p>You do not have permission to view this page.</p>
+                    <h3 className="font-bold text-lg text-red-600">Access Denied</h3>
+                    <p>You do not have permission to view this page or no permissions are assigned to your account.</p>
                 </Card>
             );
         }
