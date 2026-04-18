@@ -3,7 +3,7 @@
 import React from 'react';
 import { AdminDashboard } from '@/app/components/admin/AdminDashboard';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/app/context/AuthContext';
 import { LoginView } from '@/app/components/admin/LoginView';
 import { Card } from '@/app/components/admin/ui/AdminShared';
 
