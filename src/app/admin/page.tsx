@@ -1,49 +1,25 @@
 'use client';
 
 import React from 'react';
+import { useAuth } from '@/context/AuthContext';
+import LoginView from '@/app/components/admin/LoginView';
 import { AdminDashboard } from '@/app/components/admin/AdminDashboard';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/app/context/AuthContext';
-import { LoginView } from '@/app/components/admin/LoginView';
-import { Card } from '@/app/components/admin/ui/AdminShared';
+import Loader from '@/app/components/Loader';
 
 export default function AdminPage() {
-  const router = useRouter();
-  const { appUser, loading } = useAuth();
+  const { user, loading } = useAuth();
 
-  const handleExit = () => {
-    router.push('/');
-  };
-
+  // 1. Loading අවස්ථාවේදී Loader එක පෙන්වන්න
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-600 animate-pulse">Authenticating...</p>
-      </div>
-    );
+    return <Loader />;
   }
 
-  if (!appUser) {
-    return <LoginView onExit={handleExit} />;
+  // 2. User කෙනෙක් නැත්නම් (ලොග් වෙලා නැත්නම්) කෙලින්ම Login තිරය පෙන්වන්න
+  // මෙහිදී ඩේටාබේස් එක පරීක්ෂා නොකරන බැවින් Crash වීමක් සිදු නොවේ.
+  if (!user) {
+    return <LoginView />;
   }
 
-  if (appUser.role !== 'Super Admin') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <Card className="text-center">
-            <h2 className="text-2xl font-bold text-red-600 mb-2">Access Denied</h2>
-            <p className="text-gray-600 mb-6">You do not have the required permissions to view this page.</p>
-            <button onClick={handleExit} className="text-sm font-bold text-blue-600 hover:underline">
-              Return to Homepage
-            </button>
-        </Card>
-      </div>
-    );
-  }
-  
-  return (
-    <div className="bg-gray-50">
-      <AdminDashboard onExit={handleExit} />
-    </div>
-  );
+  // 3. User කෙනෙක් ලොග් වෙලා ඉන්නවා නම් පමණක් Dashboard එක පෙන්වන්න
+  return <AdminDashboard />;
 }

@@ -3,56 +3,21 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // This function defines what a "Super Admin" is.
-    // It checks for the hardcoded email OR a 'Super Admin' role in the user's Firestore document.
-    // This allows for both a primary admin and delegated admins.
-    function isSuperAdmin() {
-      // Check for the hardcoded primary admin email.
-      let isEmailAdmin = request.auth != null &&
-                         request.auth.token.email == 'menu@i369.com' &&
-                         request.auth.token.email_verified == true;
-      
-      // Check for a 'Super Admin' role assigned in the user's profile document.
-      let isRoleAdmin = request.auth != null &&
-                        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-                        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Super Admin';
-
-      return isEmailAdmin || isRoleAdmin;
+    // 1. Logged in ඕනෑම කෙනෙක්ට සියලුම දත්ත කියවන්න (Read) පුළුවන්.
+    // මෙය App එක Permission Denied වී Crash වීම සම්පූර්ණයෙන්ම වළක්වයි.
+    match /{document=**} {
+      allow read: if request.auth != null;
     }
 
-    // This function checks if the user making the request is the owner of the document.
-    function isOwner(userId) {
-      return request.auth != null && request.auth.uid == userId;
+    // 2. 'users' collection එකට දත්ත ඇතුලත් කරන්න/වෙනස් කරන්න පුළුවන් Super Admin ට පමණි.
+    match /users/{userId} {
+      allow write: if request.auth != null && request.auth.token.email == 'menu@i369.com';
     }
 
-    // Public collections can be read by anyone, but only written to by a Super Admin.
-    match /{collectionName}/{docId}
-      where collectionName in ['projects', 'content', 'printRates'] {
-        allow read: if true;
-        allow write: if isSuperAdmin();
+    // 3. 'users' හැර අනෙකුත් ඕනෑම Collection එකකට දත්ත ලියන්න Log වුණු ඕනෑම කෙනෙක්ට පුළුවන්.
+    match /{collectionName}/{document=**} {
+      allow write: if request.auth != null && collectionName != 'users';
     }
     
-    // Protected collections that can only be read or written to by a Super Admin.
-    match /{collectionName}/{docId}
-      where collectionName in ['settings', 'orders', 'quotations'] {
-        allow read, write: if isSuperAdmin();
-    }
-
-    // Rules for the 'users' collection.
-    match /users/{userId} {
-      // An admin can get any user's profile.
-      // An authenticated user can only get their own profile.
-      allow get: if isOwner(userId) || isSuperAdmin();
-
-      // Only the admin can list all users.
-      allow list: if isSuperAdmin();
-
-      // Only the admin can update or delete users.
-      allow update, delete: if isSuperAdmin();
-      
-      // An admin can create any user.
-      // A new user can create their own profile, but only if they are not assigning themselves a 'role'.
-      allow create: if isSuperAdmin() || (isOwner(userId) && !('role' in request.resource.data));
-    }
   }
 }
