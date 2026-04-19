@@ -3,21 +3,54 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 1. Logged in ඕනෑම කෙනෙක්ට සියලුම දත්ත කියවන්න (Read) පුළුවන්.
-    // මෙය App එක Permission Denied වී Crash වීම සම්පූර්ණයෙන්ම වළක්වයි.
-    match /{document=**} {
-      allow read: if request.auth != null;
-    }
-
-    // 2. 'users' collection එකට දත්ත ඇතුලත් කරන්න/වෙනස් කරන්න පුළුවන් Super Admin ට පමණි.
-    match /users/{userId} {
-      allow write: if request.auth != null && request.auth.token.email == 'menu@i369.com';
-    }
-
-    // 3. 'users' හැර අනෙකුත් ඕනෑම Collection එකකට දත්ත ලියන්න Log වුණු ඕනෑම කෙනෙක්ට පුළුවන්.
-    match /{collectionName}/{document=**} {
-      allow write: if request.auth != null && collectionName != 'users';
+    function isSuperAdmin() {
+      return request.auth != null && 
+             request.auth.token.email == 'menu@i369.com' &&
+             request.auth.token.email_verified;
     }
     
+    // Function to check if the user has an admin or sales role in their user document
+    function hasSalesOrAdminRole() {
+      if (request.auth == null) {
+        return false;
+      }
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return userDoc.data.role == 'Super Admin' || userDoc.data.role == 'Sales';
+    }
+
+    // Publicly readable collections
+    match /projects/{projectId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    match /content/{docId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    match /printRates/{rateId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    // 'quotations' collection accessible by sales and admins
+    match /quotations/{quoteId} {
+      allow read, write: if hasSalesOrAdminRole();
+    }
+
+    // 'users' collection with specific restrictions
+    match /users/{userId} {
+      allow get: if request.auth != null && request.auth.uid == userId;
+      allow list: if isSuperAdmin();
+      allow create: if (request.auth != null && request.auth.uid == userId && !('role' in request.resource.data)) || isSuperAdmin();
+      allow update, delete: if isSuperAdmin();
+    }
+
+    // This is a less-specific rule that will not override the more specific rules above.
+    // It ensures any other collections remain private to the Super Admin.
+    match /{document=**} {
+      allow read, write: if isSuperAdmin();
+    }
   }
 }
